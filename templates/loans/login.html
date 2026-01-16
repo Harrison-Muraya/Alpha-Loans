@@ -41,10 +41,19 @@
             </button>
         </div>
 
+        <div class="mt-6 text-center">
+            <p class="text-sm text-gray-600">
+                Don't have an account? 
+                <a href="{% url 'register' %}" class="text-indigo-600 hover:text-indigo-700 font-medium">
+                    Register here
+                </a>
+            </p>
+        </div>
+
         <div class="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p class="text-xs text-gray-600 font-semibold mb-2">Setup Instructions:</p>
+            <p class="text-xs text-gray-600 font-semibold mb-2">Demo Admin Account:</p>
             <p class="text-xs text-gray-500">1. Create superuser: python manage.py createsuperuser</p>
-            <p class="text-xs text-gray-500">2. Create regular users via Django admin</p>
+            <p class="text-xs text-gray-500">2. Or register as a regular user above</p>
         </div>
     </div>
 </div>

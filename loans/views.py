@@ -3,9 +3,28 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Sum, Count
+from django.contrib.auth.models import User
 from datetime import date
 from .models import Loan
-from .forms import LoanForm, LoanUpdateForm
+from .forms import LoanForm, LoanUpdateForm, UserRegistrationForm
+
+def user_register(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form = UserRegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.set_password(form.cleaned_data['password'])
+            user.save()
+            login(request, user)
+            messages.success(request, 'Registration successful! Welcome to Loan Manager.')
+            return redirect('dashboard')
+    else:
+        form = UserRegistrationForm()
+    
+    return render(request, 'loans/register.html', {'form': form})
 
 def user_login(request):
     if request.user.is_authenticated:
