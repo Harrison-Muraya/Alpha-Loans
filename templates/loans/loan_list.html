@@ -1,0 +1,60 @@
+{% extends 'loans/base.html' %}
+
+{% block title %}Loans - Loan Management{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <h2 class="text-2xl font-bold text-gray-800">
+        {% if user.is_staff %}All Loans{% else %}My Loans{% endif %}
+    </h2>
+
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        {% if user.is_staff %}
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Borrower</th>
+                        {% endif %}
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Interest</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Penalty</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Due</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Issue Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for loan in loans %}
+                    <tr class="hover:bg-gray-50">
+                        {% if user.is_staff %}
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ loan.borrower.get_full_name|default:loan.borrower.username }}</td>
+                        {% endif %}
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">KES {{ loan.amount|floatformat:2 }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ loan.interest_rate }}%</td>
+                        <td class="px-6 py-4 text-sm text-red-600">{{ loan.penalty_rate }}%</td>
+                        <td class="px-6 py-4 text-sm font-semibold text-gray-900">KES {{ loan.total_amount_due|floatformat:2 }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ loan.issue_date }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ loan.due_date }}</td>
+                        <td class="px-6 py-4">
+                            {% if loan.is_paid %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Paid</span>
+                            {% elif loan.status == 'overdue' %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Overdue</span>
+                            {% else %}
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Active</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-8 text-center text-gray-500">No loans found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

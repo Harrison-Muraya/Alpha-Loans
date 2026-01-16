@@ -1,0 +1,173 @@
+{% extends 'loans/base.html' %}
+
+{% block title %}Manage Loans - Loan Management{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <h2 class="text-2xl font-bold text-gray-800">Manage Loans</h2>
+
+    <!-- Add New Loan -->
+    <div class="bg-white rounded-xl shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Add New Loan
+        </h3>
+        <form method="POST" action="{% url 'manage_loans' %}">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {{ form.borrower }}
+                {{ form.amount }}
+                {{ form.due_date }}
+                <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition font-medium">
+                    Add Loan
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Loan Management Table -->
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Borrower</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Interest %</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Penalty %</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Due</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paid</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for loan in loans %}
+                    <tr class="hover:bg-gray-50" id="loan-row-{{ loan.id }}">
+                        <td class="px-6 py-4 text-sm text-gray-900">#{{ loan.id }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">{{ loan.borrower.get_full_name|default:loan.borrower.username }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">KES {{ loan.amount|floatformat:2 }}</td>
+                        <td class="px-6 py-4">
+                            <span class="view-mode-{{ loan.id }}">{{ loan.interest_rate }}%</span>
+                            <input type="number" step="0.01" value="{{ loan.interest_rate }}" class="edit-mode-{{ loan.id }} hidden px-2 py-1 border border-gray-300 rounded w-20" id="interest-{{ loan.id }}">
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="view-mode-{{ loan.id }} text-red-600">{{ loan.penalty_rate }}%</span>
+                            <input type="number" step="0.01" value="{{ loan.penalty_rate }}" class="edit-mode-{{ loan.id }} hidden px-2 py-1 border border-gray-300 rounded w-20" id="penalty-{{ loan.id }}">
+                        </td>
+                        <td class="px-6 py-4 text-sm font-semibold text-gray-900">KES {{ loan.total_amount_due|floatformat:2 }}</td>
+                        <td class="px-6 py-4">
+                            <span class="view-mode-{{ loan.id }}">
+                                {% if loan.is_paid %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Paid</span>
+                                {% elif loan.status == 'overdue' %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Overdue</span>
+                                {% else %}
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Active</span>
+                                {% endif %}
+                            </span>
+                            <select class="edit-mode-{{ loan.id }} hidden px-2 py-1 border border-gray-300 rounded text-sm" id="status-{{ loan.id }}">
+                                <option value="active" {% if loan.status == 'active' %}selected{% endif %}>Active</option>
+                                <option value="overdue" {% if loan.status == 'overdue' %}selected{% endif %}>Overdue</option>
+                            </select>
+                        </td>
+                        <td class="px-6 py-4">
+                            <input type="checkbox" {% if loan.is_paid %}checked{% endif %} class="edit-mode-{{ loan.id }} hidden rounded" id="paid-{{ loan.id }}">
+                            <span class="view-mode-{{ loan.id }}">{% if loan.is_paid %}✓{% else %}✗{% endif %}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex gap-2">
+                                <button onclick="editLoan({{ loan.id }})" class="view-mode-{{ loan.id }} p-1 text-indigo-600 hover:bg-indigo-50 rounded" title="Edit">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                </button>
+                                <button onclick="saveLoan({{ loan.id }})" class="edit-mode-{{ loan.id }} hidden p-1 text-green-600 hover:bg-green-50 rounded" title="Save">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </button>
+                                <button onclick="cancelEdit({{ loan.id }})" class="edit-mode-{{ loan.id }} hidden p-1 text-red-600 hover:bg-red-50 rounded" title="Cancel">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                                <form method="POST" action="{% url 'delete_loan' loan.id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this loan?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="view-mode-{{ loan.id }} p-1 text-red-600 hover:bg-red-50 rounded" title="Delete">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="px-6 py-8 text-center text-gray-500">No loans found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function editLoan(loanId) {
+    document.querySelectorAll('.view-mode-' + loanId).forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.edit-mode-' + loanId).forEach(el => el.classList.remove('hidden'));
+}
+
+function cancelEdit(loanId) {
+    document.querySelectorAll('.edit-mode-' + loanId).forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.view-mode-' + loanId).forEach(el => el.classList.remove('hidden'));
+}
+
+function saveLoan(loanId) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/update/' + loanId + '/';
+    
+    const csrfToken = '{{ csrf_token }}';
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = csrfToken;
+    form.appendChild(csrfInput);
+    
+    const interestInput = document.createElement('input');
+    interestInput.type = 'hidden';
+    interestInput.name = 'interest_rate';
+    interestInput.value = document.getElementById('interest-' + loanId).value;
+    form.appendChild(interestInput);
+    
+    const penaltyInput = document.createElement('input');
+    penaltyInput.type = 'hidden';
+    penaltyInput.name = 'penalty_rate';
+    penaltyInput.value = document.getElementById('penalty-' + loanId).value;
+    form.appendChild(penaltyInput)
+    
+
+    const statusInput = document.createElement('input');
+    statusInput.type = 'hidden';
+    statusInput.name = 'status';
+    statusInput.value = document.getElementById('status-' + loanId).value;
+    form.appendChild(statusInput);
+
+    const paidInput = document.createElement('input');
+    paidInput.type = 'hidden';
+    paidInput.name = 'is_paid';
+    paidInput.value = document.getElementById('paid-' + loanId).checked;
+    form.appendChild(paidInput);
+
+    document.body.appendChild(form);
+    form.submit();
+
+    }
+</script>
+{% endblock %}
