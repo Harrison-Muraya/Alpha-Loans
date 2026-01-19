@@ -72,8 +72,12 @@ def loan_list(request):
         loans = Loan.objects.all().select_related('borrower')
     else:
         loans = Loan.objects.filter(borrower=request.user)
+        total_expected = sum([loan.total_amount_due() for loan in loans])
     
-    context = {'loans': loans}
+    context = {
+        'loans': loans,
+        'total_expected': total_expected if not request.user.is_staff else None,
+        }
     return render(request, 'loans/loan_list.html', context)
 
 @login_required

@@ -2,6 +2,8 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import Loan
+from datetime import datetime
+from calendar import monthrange
 
 class UserRegistrationForm(forms.ModelForm):
     password = forms.CharField(
@@ -60,8 +62,28 @@ class LoanForm(forms.ModelForm):
         }
     
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['borrower'].queryset = User.objects.filter(is_staff=False)
+            super().__init__(*args, **kwargs)
+            self.fields['borrower'].queryset = User.objects.filter(is_staff=False)
+            
+            # Make due_date optional and set default to end of current month
+            self.fields['due_date'].required = False
+            
+            # Set initial value to last day of current month
+            today = datetime.now()
+            last_day = monthrange(today.year, today.month)[1]
+            end_of_month = datetime(today.year, today.month, last_day).date()
+            self.fields['due_date'].initial = end_of_month
+    
+    def clean_due_date(self):
+        due_date = self.cleaned_data.get('due_date')
+        
+        # If no due_date provided, set to end of current month
+        if not due_date:
+            today = datetime.now()
+            last_day = monthrange(today.year, today.month)[1]
+            due_date = datetime(today.year, today.month, last_day).date()
+        
+        return due_date
 
 class LoanUpdateForm(forms.ModelForm):
     class Meta:
