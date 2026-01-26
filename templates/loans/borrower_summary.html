@@ -23,9 +23,11 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200">
                     {% for user in users %}
-                    <tr class="hover:bg-gray-50" id="loan-row-{{ user.id }}">
+                    <tr onclick="window.location='{% url 'borrower_detail' user.id %}'"
+                            class="hover:bg-indigo-50 cursor-pointer transition duration-150 ease-in-out"
+                            id="loan-row-{{ user.id }}">
                         <td class="px-6 py-4 text-sm text-gray-900">#{{ user.id }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">{{ user.get_full_name|default:user.username }}</td>
+                        <a href="{% url 'borrower_detail' user.id %}"><td class="px-6 py-4 text-sm text-gray-900">{{ user.get_full_name|default:user.username }}</td></a>
                         <td class="px-6 py-4 text-sm font-semibold text-gray-900"> {{ user.total_loans }}</td>
                         <td class="px-6 py-4 text-sm font-semibold text-gray-900">KES {{ user.total_amount_borrowed|floatformat:2 }}</td>
                         <td class="px-6 py-4 text-sm font-semibold text-gray-900">KES {{ user.total_expected|floatformat:2 }}</td>

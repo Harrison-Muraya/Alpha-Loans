@@ -141,6 +141,7 @@ def borrower_summary(request):
 
     return render(request, 'loans/borrower_summary.html', {'users': users})
 
+# Borrower detail view
 @login_required
 @user_passes_test(lambda u: u.is_staff)
 def borrower_detail(request, user_id):
