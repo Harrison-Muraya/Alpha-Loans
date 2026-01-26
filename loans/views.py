@@ -141,7 +141,26 @@ def borrower_summary(request):
 
     return render(request, 'loans/borrower_summary.html', {'users': users})
 
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def borrower_detail(request, user_id):
+    borrower = get_object_or_404(User, id=user_id)
+    loans = Loan.objects.filter(borrower=borrower)
+    
+    total_loaned = loans.aggregate(Sum('amount'))['amount__sum'] or 0
+    total_expected = sum([loan.total_amount_due() for loan in loans])
+    active_loans = loans.filter(is_paid=False).count()
+    
+    context = {
+        'borrower': borrower,
+        'loans': loans,
+        'total_loaned': total_loaned,
+        'total_expected': total_expected,
+        'active_loans': active_loans,
+    }
+    return render(request, 'loans/borrower_detail.html', context)
 
+#  Borrower detail view
 @login_required
 @user_passes_test(lambda u: u.is_staff)
 def update_loan(request, loan_id):
