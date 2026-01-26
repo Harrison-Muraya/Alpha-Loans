@@ -12,7 +12,7 @@ class Loan(models.Model):
     borrower = models.ForeignKey(User, on_delete=models.CASCADE, related_name='loans')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     interest_rate = models.DecimalField(max_digits=5, decimal_places=2, default=20.00)
-    penalty_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    penalty_rate = models.DecimalField(max_digits=5, decimal_places=2, default=40.00)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='active')
     issue_date = models.DateField(auto_now_add=True)
     due_date = models.DateField()

@@ -7,6 +7,8 @@ from django.contrib.auth.models import User
 from datetime import date
 from .models import Loan
 from .forms import LoanForm, LoanUpdateForm, UserRegistrationForm
+from decimal import Decimal
+from django.db.models import Count, Sum, F, DecimalField, ExpressionWrapper, Case, When, IntegerField
 
 def user_register(request):
     if request.user.is_authenticated:
@@ -98,6 +100,47 @@ def manage_loans(request):
         'loans': loans,
     }
     return render(request, 'loans/manage_loans.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def borrower_summary(request):
+    users = User.objects.filter(loans__isnull=False).annotate(
+        total_loans=Count('loans'),
+        total_amount_borrowed=Sum('loans__amount'),
+        total_expected=Sum(
+            ExpressionWrapper(
+                F('loans__amount') + (F('loans__amount') * F('loans__interest_rate') / Decimal('100')),
+                output_field=DecimalField(max_digits=12, decimal_places=2)
+            )
+        ),
+        is_paid=Sum(
+            Case(
+                When(loans__is_paid=True, then=1),
+                default=0,
+                output_field=IntegerField()
+            )
+        ),
+    ).distinct()
+
+    for user in users:
+        active_count = Loan.objects.filter(borrower=user, status='active').count()
+        overdue_count = Loan.objects.filter(borrower=user, status='overdue').count()
+        paid_count = Loan.objects.filter(borrower=user, status='paid').count()
+
+        if overdue_count:
+            user.status = 'overdue'
+        elif active_count:
+            user.status = 'active'
+        elif paid_count:
+            user.status = 'paid'
+        else:
+            user.status = 'n/a'
+
+        user.is_paid = paid_count > 0
+
+    return render(request, 'loans/borrower_summary.html', {'users': users})
+
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
