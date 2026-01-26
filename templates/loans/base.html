@@ -23,7 +23,7 @@
                 <div class="flex items-center gap-4">
                     <div class="text-right">
                         <p class="text-sm font-medium text-gray-900">{{ user.get_full_name|default:user.username }}</p>
-                        <p class="text-xs text-gray-500">{% if user.is_staff %}Admin{% else %}User{% endif %}</p>
+                        <p class="text-xs text-gray-500">{% if user.is_staff %}Admin{% else %}{% endif %}</p>
                     </div>
                     <a href="{% url 'logout' %}" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition">
                         Logout
