@@ -6,3 +6,5 @@ python manage.py startapp loans
 sudo systemctl daemon-reload
 sudo systemctl restart Alpha-Loans
 sudo systemctl status Alpha-Loans
+
+##Fix ownership of the project
