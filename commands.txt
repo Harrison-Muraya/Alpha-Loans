@@ -1,3 +1,8 @@
 .\venv\Scripts\activate
 pip install django
 python manage.py startapp loans
+
+##Restart the service
+sudo systemctl daemon-reload
+sudo systemctl restart Alpha-Loans
+sudo systemctl status Alpha-Loans
