@@ -142,7 +142,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
@@ -153,6 +153,14 @@ STATIC_URL = 'static/'
 
 STATICFILES_DIRS = [
     BASE_DIR / "theme" / "static",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://197.248.201.233:9000',
+    'https://197.248.201.233:9000',
+    'http://192.168.100.26:8000',
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
 ]
 
 LOGIN_URL = 'login'
