@@ -32,3 +32,6 @@ python manage.py collectstatic --noinput
 sudo systemctl restart Alpha-Loans
 sudo systemctl status Alpha-Loans
 sudo journalctl -u Alpha-Loans -n 50
+
+
+
