@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  @page {
+    size: A4;
+    margin: 18mm 16mm 18mm 16mm;
+    @bottom-center {
+      content: "Alpha Loans · Nairobi, Kenya · Page " counter(page) " of " counter(pages);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 9px;
+      color: #a8a29e;
+    }
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    color: #1c1917;
+    line-height: 1.5;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6mm;
+    padding-bottom: 4mm;
+    border-bottom: 2px solid #2D5BE3;
+  }
+  .brand-name {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-size: 22px;
+    color: #2D5BE3;
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+  .brand-sub {
+    font-size: 9px;
+    color: #78716c;
+    margin-top: 3px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .doc-meta {
+    text-align: right;
+    font-size: 9px;
+    color: #78716c;
+    line-height: 1.8;
+  }
+  .doc-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1c1917;
+    letter-spacing: -0.2px;
+  }
+
+  /* ── Borrower card ── */
+  .borrower-card {
+    background: #f0ede8;
+    border-radius: 6px;
+    padding: 4mm 5mm;
+    margin-bottom: 5mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8mm;
+  }
+  .borrower-name {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-size: 16px;
+    color: #1c1917;
+    margin-bottom: 2px;
+  }
+  .borrower-meta { font-size: 9px; color: #78716c; line-height: 1.8; }
+
+  /* ── Summary boxes ── */
+  .summary-row {
+    display: flex;
+    gap: 3mm;
+    margin-bottom: 6mm;
+  }
+  .summary-box {
+    flex: 1;
+    border: 1px solid #e5e0d8;
+    border-radius: 6px;
+    padding: 3mm 4mm;
+    text-align: center;
+  }
+  .summary-box .label {
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #a8a29e;
+    margin-bottom: 2px;
+  }
+  .summary-box .value {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1c1917;
+  }
+  .summary-box.blue  .value { color: #2D5BE3; }
+  .summary-box.green .value { color: #16a34a; }
+  .summary-box.red   .value { color: #dc2626; }
+
+  /* ── Section heading ── */
+  .section-title {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #78716c;
+    margin-bottom: 2mm;
+    padding-bottom: 1.5mm;
+    border-bottom: 1px solid #e5e0d8;
+  }
+
+  /* ── Loan block ── */
+  .loan-block {
+    margin-bottom: 5mm;
+    border: 1px solid #e5e0d8;
+    border-radius: 6px;
+    overflow: hidden;
+    page-break-inside: avoid;
+  }
+  .loan-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2.5mm 4mm;
+    background: #1c1917;
+    color: #f0ede8;
+  }
+  .loan-id {
+    font-family: 'DM Serif Display', serif;
+    font-size: 12px;
+    letter-spacing: -0.2px;
+  }
+  .loan-dates { font-size: 9px; color: #a8a29e; }
+  .status-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 100px;
+  }
+  .status-paid    { background: #dcfce7; color: #16a34a; }
+  .status-active  { background: #dbeafe; color: #2D5BE3; }
+  .status-overdue { background: #fee2e2; color: #dc2626; }
+
+  /* Amounts grid */
+  .amounts-grid {
+    display: flex;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .amount-cell {
+    flex: 1;
+    padding: 2.5mm 4mm;
+    border-right: 1px solid #f3f4f6;
+  }
+  .amount-cell:last-child { border-right: none; }
+  .amount-cell .alabel {
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: #a8a29e;
+    margin-bottom: 1px;
+  }
+  .amount-cell .avalue {
+    font-size: 11px;
+    font-weight: 700;
+    color: #1c1917;
+  }
+  .avalue.blue  { color: #2D5BE3; }
+  .avalue.green { color: #16a34a; }
+  .avalue.red   { color: #dc2626; }
+
+  /* Progress bar */
+  .progress-row {
+    padding: 2.5mm 4mm;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 8px;
+    color: #a8a29e;
+    margin-bottom: 1.5mm;
+  }
+  .progress-track {
+    height: 4px;
+    background: #f3f4f6;
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 100px;
+  }
+
+  /* Payments table */
+  .payments-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .payments-table th {
+    font-size: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: #a8a29e;
+    text-align: left;
+    padding: 2mm 4mm;
+    background: #f9fafb;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .payments-table td {
+    font-size: 9px;
+    padding: 2mm 4mm;
+    border-bottom: 1px solid #f9fafb;
+    color: #374151;
+  }
+  .payments-table tr:last-child td { border-bottom: none; }
+  .no-payments {
+    padding: 3mm 4mm;
+    font-size: 9px;
+    color: #d1d5db;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="header">
+  <div>
+    <div class="brand-name">Alpha Loans</div>
+    <div class="brand-sub">Nairobi, Kenya</div>
+  </div>
+  <div class="doc-meta">
+    <div class="doc-title">LOAN STATEMENT</div>
+    <div>Generated: {{ generated_at|date:"d M Y, H:i" }}</div>
+    <div>Ref: STMT-{{ borrower.id }}-{{ generated_at|date:"Ymd" }}</div>
+  </div>
+</div>
+
+<!-- ── Borrower ── -->
+<div class="borrower-card">
+  <div>
+    <div class="borrower-name">{{ borrower.get_full_name|default:borrower.username }}</div>
+    <div class="borrower-meta">
+      Username: @{{ borrower.username }}<br>
+      Email: {{ borrower.email|default:"—" }}<br>
+      {% with profile=borrower.profile %}
+      {% if profile %}Phone: {{ profile.phone_number|default:"—" }}{% endif %}
+      {% endwith %}
+    </div>
+  </div>
+  <div class="borrower-meta" style="text-align:right;">
+    <div style="font-size:9px;font-weight:600;color:#1c1917;margin-bottom:2px;">ACCOUNT SUMMARY</div>
+    Total loans: {{ loans|length }}
+  </div>
+</div>
+
+<!-- ── Summary ── -->
+<div class="summary-row">
+  <div class="summary-box">
+    <div class="label">Total Loaned</div>
+    <div class="value">KES {{ total_loaned|floatformat:2 }}</div>
+  </div>
+  <div class="summary-box blue">
+    <div class="label">Total Due</div>
+    <div class="value">KES {{ total_due|floatformat:2 }}</div>
+  </div>
+  <div class="summary-box green">
+    <div class="label">Total Paid</div>
+    <div class="value">KES {{ total_paid|floatformat:2 }}</div>
+  </div>
+  <div class="summary-box red">
+    <div class="label">Outstanding</div>
+    <div class="value">KES {{ total_balance|floatformat:2 }}</div>
+  </div>
+</div>
+
+<!-- ── Loan details ── -->
+<div class="section-title">Loan Details</div>
+
+{% for loan in loans %}
+<div class="loan-block">
+  <div class="loan-header">
+    <div>
+      <span class="loan-id">Loan #{{ loan.id }}</span>
+      <span class="loan-dates" style="margin-left:8px;">Issued {{ loan.issue_date }} · Due {{ loan.due_date }}</span>
+    </div>
+    {% if loan.is_paid %}
+    <span class="status-badge status-paid">PAID</span>
+    {% elif loan.status == 'overdue' %}
+    <span class="status-badge status-overdue">OVERDUE</span>
+    {% else %}
+    <span class="status-badge status-active">ACTIVE</span>
+    {% endif %}
+  </div>
+
+  <!-- Amounts -->
+  <div class="amounts-grid">
+    <div class="amount-cell">
+      <div class="alabel">Principal</div>
+      <div class="avalue">KES {{ loan.amount|floatformat:2 }}</div>
+    </div>
+    <div class="amount-cell">
+      <div class="alabel">Interest ({{ loan.interest_rate }}%)</div>
+      <div class="avalue">KES {{ loan.calculate_interest|floatformat:2 }}</div>
+    </div>
+    <div class="amount-cell">
+      <div class="alabel">Penalty ({{ loan.penalty_rate }}%)</div>
+      <div class="avalue">KES {{ loan.calculate_penalty|floatformat:2 }}</div>
+    </div>
+    <div class="amount-cell">
+      <div class="alabel">Total Due</div>
+      <div class="avalue blue">KES {{ loan.total_amount_due|floatformat:2 }}</div>
+    </div>
+    <div class="amount-cell">
+      <div class="alabel">Paid</div>
+      <div class="avalue green">KES {{ loan.total_paid|floatformat:2 }}</div>
+    </div>
+    <div class="amount-cell">
+      <div class="alabel">Balance</div>
+      <div class="avalue red">KES {{ loan.balance_remaining|floatformat:2 }}</div>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  {% with pct=loan.payment_percentage %}
+  <div class="progress-row">
+    <div class="progress-labels">
+      <span>Repayment progress</span>
+      <span>{{ pct }}%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" style="width:{{ pct }}%;background:{% if pct == 100 %}#16a34a{% elif pct > 50 %}#2D5BE3{% else %}#f59e0b{% endif %};"></div>
+    </div>
+  </div>
+  {% endwith %}
+
+  <!-- Payments -->
+  {% if loan.payments.all %}
+  <table class="payments-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Amount</th>
+        <th>Method</th>
+        <th>Reference</th>
+        <th>Note</th>
+        <th>Recorded By</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in loan.payments.all %}
+      <tr>
+        <td>{{ p.paid_at|date:"d M Y H:i" }}</td>
+        <td style="font-weight:600;">KES {{ p.amount|floatformat:2 }}</td>
+        <td>{{ p.get_method_display }}</td>
+        <td>{{ p.reference|default:"—" }}</td>
+        <td>{{ p.note|default:"—" }}</td>
+        <td>{{ p.recorded_by.username|default:"—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="no-payments">No payments recorded for this loan.</div>
+  {% endif %}
+</div>
+{% endfor %}
+
+</body>
+</html>

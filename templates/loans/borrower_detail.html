@@ -1,216 +1,143 @@
 {% extends 'loans/base.html' %}
 {% block title %}{{ borrower.get_full_name|default:borrower.username }} — Loans{% endblock %}
-
 {% block content %}
 <div class="space-y-6">
-
-  <!-- Header -->
   <div class="flex justify-between items-start flex-wrap gap-4">
     <div>
-      <a href="{% url 'borrower_summary' %}" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">← Back to Users</a>
-      <h2 class="text-2xl font-bold text-gray-800 mt-1">
-        {{ borrower.get_full_name|default:borrower.username }}
-        <span class="text-sm font-normal text-gray-400 ml-2">@{{ borrower.username }}</span>
-      </h2>
+      <a href="{% url 'borrower_summary' %}" class="text-sm text-indigo-600 hover:text-indigo-700">← Back to Users</a>
+      <h2 class="text-2xl font-bold text-gray-800 mt-1">{{ borrower.get_full_name|default:borrower.username }} <span class="text-sm font-normal text-gray-400 ml-2">@{{ borrower.username }}</span></h2>
     </div>
-    <!-- Summary cards -->
-    <div class="flex gap-4 flex-wrap">
-      <div class="bg-white rounded-xl shadow-sm px-5 py-3 text-center min-w-[110px]">
-        <p class="text-xs text-gray-500 uppercase tracking-wide">Loans</p>
-        <p class="text-2xl font-bold text-gray-800">{{ loans|length }}</p>
-      </div>
-      <div class="bg-white rounded-xl shadow-sm px-5 py-3 text-center min-w-[110px]">
-        <p class="text-xs text-gray-500 uppercase tracking-wide">Loaned</p>
-        <p class="text-lg font-bold text-gray-800">KES {{ total_loaned|floatformat:0 }}</p>
-      </div>
-      <div class="bg-white rounded-xl shadow-sm px-5 py-3 text-center min-w-[110px]">
-        <p class="text-xs text-gray-500 uppercase tracking-wide">Total Due</p>
-        <p class="text-lg font-bold text-indigo-600">KES {{ total_expected|floatformat:0 }}</p>
-      </div>
-    </div>
+    <a href="{% url 'export_borrower_pdf' borrower.id %}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#1C1917;color:white;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Export PDF
+    </a>
+  </div>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="bg-white rounded-xl shadow-sm p-4 text-center"><p class="text-xs text-gray-500 uppercase tracking-wide">Loans</p><p class="text-2xl font-bold text-gray-800">{{ loans|length }}</p></div>
+    <div class="bg-white rounded-xl shadow-sm p-4 text-center"><p class="text-xs text-gray-500 uppercase tracking-wide">Loaned</p><p class="text-lg font-bold text-gray-800">KES {{ total_loaned|floatformat:0 }}</p></div>
+    <div class="bg-white rounded-xl shadow-sm p-4 text-center"><p class="text-xs text-gray-500 uppercase tracking-wide">Paid</p><p class="text-lg font-bold text-green-600">KES {{ total_paid|floatformat:0 }}</p></div>
+    <div class="bg-white rounded-xl shadow-sm p-4 text-center"><p class="text-xs text-gray-500 uppercase tracking-wide">Balance</p><p class="text-lg font-bold text-red-500">KES {{ total_balance|floatformat:0 }}</p></div>
   </div>
 
   {% if loans %}
-  <!-- Bulk delete toolbar (hidden until a checkbox is checked) -->
-  <div id="bulk-toolbar" style="display:none;" class="bg-red-50 border border-red-200 rounded-xl px-5 py-3 flex items-center justify-between gap-4 flex-wrap">
-    <div class="flex items-center gap-2">
-      <div class="w-2 h-2 rounded-full bg-red-500"></div>
-      <span class="text-sm font-semibold text-red-700">
-        <span id="selected-count">0</span> loan(s) selected
-      </span>
+  <div id="bulk-toolbar" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:12px 20px;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="width:8px;height:8px;border-radius:50%;background:#dc2626;"></div>
+      <span style="font-size:14px;font-weight:600;color:#b91c1c;"><span id="selected-count">0</span> loan(s) selected</span>
     </div>
-    <button onclick="openDeleteModal()"
-            style="background:#dc2626;color:white;padding:8px 20px;border-radius:8px;font-size:14px;font-weight:600;border:none;cursor:pointer;display:flex;align-items:center;gap:8px;">
-      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-      </svg>
+    <button onclick="openDeleteModal()" style="background:#dc2626;color:white;padding:8px 20px;border-radius:8px;font-size:14px;font-weight:600;border:none;cursor:pointer;display:flex;align-items:center;gap:8px;">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
       Delete Selected
     </button>
   </div>
 
-  <!-- Loans table -->
-  <div class="bg-white rounded-xl shadow overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+  <div class="space-y-4">
+    <div class="flex items-center justify-between">
       <h3 class="font-semibold text-gray-700 text-sm uppercase tracking-wide">Loan Records</h3>
-      <label class="flex items-center gap-2 text-sm text-gray-500 cursor-pointer select-none">
-        <input type="checkbox" id="select-all" class="rounded" onchange="toggleSelectAll(this)">
-        Select all
-      </label>
+      <label class="flex items-center gap-2 text-sm text-gray-500 cursor-pointer"><input type="checkbox" id="select-all" class="rounded" onchange="toggleSelectAll(this)"> Select all</label>
     </div>
 
-    <div class="overflow-x-auto">
-      <table class="w-full">
-        <thead class="bg-gray-50 border-b border-gray-200">
-          <tr>
-            <th class="px-4 py-3 w-10"></th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Interest</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Penalty</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Due</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Issue Date</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          {% for loan in loans %}
-          <tr class="hover:bg-gray-50 transition loan-row" id="row-{{ loan.id }}">
-            <td class="px-4 py-4 text-center">
-              <input type="checkbox" name="loan_ids" value="{{ loan.id }}"
-                     class="loan-checkbox rounded border-gray-300"
-                     onchange="updateToolbar()">
-            </td>
-            <td class="px-6 py-4 text-sm font-semibold text-gray-900">KES {{ loan.amount|floatformat:2 }}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">{{ loan.interest_rate }}%</td>
-            <td class="px-6 py-4 text-sm text-red-500">{{ loan.penalty_rate }}%</td>
-            <td class="px-6 py-4 text-sm font-semibold text-indigo-600">KES {{ loan.total_amount_due|floatformat:2 }}</td>
-            <td class="px-6 py-4 text-sm text-gray-500">{{ loan.issue_date }}</td>
-            <td class="px-6 py-4 text-sm text-gray-500">{{ loan.due_date }}</td>
-            <td class="px-6 py-4">
-              {% if loan.is_paid %}
-              <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Paid</span>
-              {% elif loan.status == 'overdue' %}
-              <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Overdue</span>
-              {% else %}
-              <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Active</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    {% for loan in loans %}
+    <div class="bg-white rounded-xl shadow overflow-hidden" id="row-{{ loan.id }}">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #f3f4f6;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <input type="checkbox" class="loan-checkbox rounded" value="{{ loan.id }}" onchange="updateToolbar()">
+          <div>
+            <span class="text-sm font-bold text-gray-800">Loan #{{ loan.id }}</span>
+            <span class="text-xs text-gray-400 ml-2">Issued {{ loan.issue_date }} · Due {{ loan.due_date }}</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          {% if loan.is_paid %}<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Paid</span>
+          {% elif loan.status == 'overdue' %}<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Overdue</span>
+          {% else %}<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Active</span>{% endif %}
+          {% if not loan.is_paid %}
+          <button onclick="togglePaymentForm({{ loan.id }})" style="background:#2D5BE3;color:white;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;border:none;cursor:pointer;">+ Payment</button>
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid #f3f4f6;">
+        <div style="padding:12px 20px;border-right:1px solid #f3f4f6;"><p style="font-size:11px;color:#9ca3af;text-transform:uppercase;margin-bottom:2px;">Principal</p><p style="font-size:15px;font-weight:700;color:#1c1917;">KES {{ loan.amount|floatformat:2 }}</p></div>
+        <div style="padding:12px 20px;border-right:1px solid #f3f4f6;"><p style="font-size:11px;color:#9ca3af;text-transform:uppercase;margin-bottom:2px;">Total Due</p><p style="font-size:15px;font-weight:700;color:#2D5BE3;">KES {{ loan.total_amount_due|floatformat:2 }}</p></div>
+        <div style="padding:12px 20px;border-right:1px solid #f3f4f6;"><p style="font-size:11px;color:#9ca3af;text-transform:uppercase;margin-bottom:2px;">Paid</p><p style="font-size:15px;font-weight:700;color:#16a34a;">KES {{ loan.total_paid|floatformat:2 }}</p></div>
+        <div style="padding:12px 20px;"><p style="font-size:11px;color:#9ca3af;text-transform:uppercase;margin-bottom:2px;">Balance</p><p style="font-size:15px;font-weight:700;color:#dc2626;">KES {{ loan.balance_remaining|floatformat:2 }}</p></div>
+      </div>
+
+      {% with pct=loan.payment_percentage %}
+      <div style="padding:12px 20px;border-bottom:1px solid #f3f4f6;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:11px;color:#6b7280;">Repayment progress</span><span style="font-size:11px;font-weight:600;color:#1c1917;">{{ pct }}%</span></div>
+        <div style="background:#f3f4f6;border-radius:100px;height:6px;overflow:hidden;"><div style="height:100%;border-radius:100px;width:{{ pct }}%;background:{% if pct == 100 %}#16a34a{% elif pct > 50 %}#2D5BE3{% else %}#f59e0b{% endif %};"></div></div>
+      </div>
+      {% endwith %}
+
+      <div id="payment-form-{{ loan.id }}" style="display:none;padding:16px 20px;background:#f9fafb;border-bottom:1px solid #f3f4f6;">
+        <form method="POST" action="{% url 'record_payment' loan.id %}">
+          {% csrf_token %}
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+            <div><label style="font-size:11px;color:#6b7280;display:block;margin-bottom:3px;">Amount (KES)</label><input type="number" name="amount" step="0.01" min="0.01" placeholder="0.00" required style="padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;width:130px;"></div>
+            <div><label style="font-size:11px;color:#6b7280;display:block;margin-bottom:3px;">Method</label><select name="method" style="padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;"><option value="cash">Cash</option><option value="mpesa">M-Pesa</option><option value="bank">Bank</option><option value="other">Other</option></select></div>
+            <div><label style="font-size:11px;color:#6b7280;display:block;margin-bottom:3px;">Reference</label><input type="text" name="reference" placeholder="M-Pesa code…" style="padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;width:150px;"></div>
+            <div><label style="font-size:11px;color:#6b7280;display:block;margin-bottom:3px;">Note</label><input type="text" name="note" placeholder="Optional" style="padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;width:140px;"></div>
+            <div style="display:flex;gap:6px;">
+              <button type="submit" style="padding:7px 16px;background:#16a34a;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Record</button>
+              <button type="button" onclick="togglePaymentForm({{ loan.id }})" style="padding:7px 10px;background:#f3f4f6;color:#6b7280;border:none;border-radius:6px;font-size:13px;cursor:pointer;">✕</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      {% if loan.payments.all %}
+      <div style="padding:12px 20px;">
+        <p style="font-size:11px;color:#9ca3af;text-transform:uppercase;margin-bottom:8px;">Payment History</p>
+        {% for payment in loan.payments.all %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#f9fafb;border-radius:6px;font-size:12px;margin-bottom:4px;flex-wrap:wrap;gap:4px;">
+          <span style="color:#374151;font-weight:600;">KES {{ payment.amount|floatformat:2 }}</span>
+          <span style="color:#6b7280;">{{ payment.get_method_display }}{% if payment.reference %} · {{ payment.reference }}{% endif %}</span>
+          <span style="color:#9ca3af;">{{ payment.paid_at|date:"d M Y H:i" }}</span>
+          <span style="color:#9ca3af;">by {{ payment.recorded_by.username|default:"—" }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
     </div>
+    {% endfor %}
   </div>
-
   {% else %}
-  <div class="bg-white rounded-xl shadow p-12 text-center">
-    <p class="text-gray-400 text-lg">No loans found for this borrower.</p>
-  </div>
+  <div class="bg-white rounded-xl shadow p-12 text-center"><p class="text-gray-400">No loans found for this borrower.</p></div>
   {% endif %}
-
 </div>
 
-<!-- ── Delete Confirm Modal ─────────────────────────────────────────── -->
-<div id="delete-modal"
-     style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; padding:16px;">
-  <div style="background:white; border-radius:16px; box-shadow:0 25px 50px rgba(0,0,0,0.25); width:100%; max-width:440px; padding:32px;">
-    <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:16px;">
-      <div style="width:40px; height:40px; border-radius:50%; background:#fee2e2; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-        <svg width="20" height="20" fill="none" stroke="#dc2626" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-        </svg>
-      </div>
-      <div>
-        <h3 style="font-size:18px; font-weight:700; color:#111827; margin-bottom:4px;">Delete Selected Loans?</h3>
-        <p style="font-size:13px; color:#6b7280;">This action cannot be undone. Loans will be archived.</p>
-      </div>
+<div id="delete-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;padding:16px;">
+  <div style="background:white;border-radius:16px;box-shadow:0 25px 50px rgba(0,0,0,0.25);width:100%;max-width:440px;padding:32px;">
+    <h3 style="font-size:18px;font-weight:700;color:#111827;margin-bottom:8px;">Delete Selected Loans?</h3>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">Loans will be archived for future reference.</p>
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#b91c1c;">
+      <strong id="modal-count">0</strong> loan(s) will be deleted from <strong>{{ borrower.get_full_name|default:borrower.username }}</strong>.
     </div>
-
-    <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:12px 16px; margin-bottom:20px; font-size:13px; color:#b91c1c;">
-      <strong id="modal-count">0</strong> loan(s) will be permanently deleted from
-      <strong>{{ borrower.get_full_name|default:borrower.username }}</strong>'s account and moved to the deleted archive.
-    </div>
-
-    <label style="display:block; font-size:13px; font-weight:500; color:#374151; margin-bottom:6px;">
-      Reason for deletion <span style="color:#9ca3af;">(optional)</span>
-    </label>
-    <textarea id="delete-reason" rows="2"
-              style="width:100%; padding:8px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:13px; resize:vertical; margin-bottom:20px; font-family:inherit;"
-              placeholder="e.g. Duplicate entry, data correction…"></textarea>
-
+    <label style="display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px;">Reason <span style="color:#9ca3af;">(optional)</span></label>
+    <textarea id="delete-reason" rows="2" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;resize:vertical;margin-bottom:20px;font-family:inherit;" placeholder="e.g. Duplicate entry…"></textarea>
     <form method="POST" action="{% url 'borrower_detail' borrower.id %}" id="bulk-delete-form">
       {% csrf_token %}
       <div id="hidden-loan-ids"></div>
       <input type="hidden" name="reason" id="form-reason">
-
-      <div style="display:flex; gap:12px;">
-        <button type="button" onclick="closeDeleteModal()"
-                style="flex:1; padding:10px; border:1px solid #d1d5db; background:white; color:#374151; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer;">
-          Cancel
-        </button>
-        <button type="submit"
-                style="flex:1; padding:10px; background:#dc2626; color:white; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer;">
-          Yes, Delete &amp; Archive
-        </button>
+      <div style="display:flex;gap:12px;">
+        <button type="button" onclick="closeDeleteModal()" style="flex:1;padding:10px;border:1px solid #d1d5db;background:white;color:#374151;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;">Cancel</button>
+        <button type="submit" style="flex:1;padding:10px;background:#dc2626;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">Yes, Delete &amp; Archive</button>
       </div>
     </form>
   </div>
 </div>
 
 <script>
-function getChecked() {
-  return [...document.querySelectorAll('.loan-checkbox:checked')];
-}
-
-function updateToolbar() {
-  const checked = getChecked();
-  const toolbar = document.getElementById('bulk-toolbar');
-  document.getElementById('selected-count').textContent = checked.length;
-  toolbar.style.display = checked.length > 0 ? 'flex' : 'none';
-
-  const all = document.querySelectorAll('.loan-checkbox');
-  const selectAll = document.getElementById('select-all');
-  selectAll.indeterminate = checked.length > 0 && checked.length < all.length;
-  selectAll.checked = checked.length === all.length && all.length > 0;
-}
-
-function toggleSelectAll(cb) {
-  document.querySelectorAll('.loan-checkbox').forEach(c => c.checked = cb.checked);
-  updateToolbar();
-}
-
-function openDeleteModal() {
-  const checked = getChecked();
-  if (!checked.length) return;
-
-  const container = document.getElementById('hidden-loan-ids');
-  container.innerHTML = '';
-  checked.forEach(cb => {
-    const inp = document.createElement('input');
-    inp.type = 'hidden';
-    inp.name = 'loan_ids';
-    inp.value = cb.value;
-    container.appendChild(inp);
-  });
-
-  document.getElementById('modal-count').textContent = checked.length;
-  const modal = document.getElementById('delete-modal');
-  modal.style.display = 'flex';
-}
-
-function closeDeleteModal() {
-  document.getElementById('delete-modal').style.display = 'none';
-}
-
-document.getElementById('bulk-delete-form').addEventListener('submit', function() {
-  document.getElementById('form-reason').value =
-    document.getElementById('delete-reason').value;
-});
-
-document.getElementById('delete-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeDeleteModal();
-});
+function togglePaymentForm(id){const f=document.getElementById('payment-form-'+id);f.style.display=f.style.display==='none'?'block':'none';}
+function getChecked(){return[...document.querySelectorAll('.loan-checkbox:checked')];}
+function updateToolbar(){const c=getChecked();document.getElementById('selected-count').textContent=c.length;document.getElementById('bulk-toolbar').style.display=c.length>0?'flex':'none';const a=document.querySelectorAll('.loan-checkbox');const sa=document.getElementById('select-all');sa.indeterminate=c.length>0&&c.length<a.length;sa.checked=c.length===a.length&&a.length>0;}
+function toggleSelectAll(cb){document.querySelectorAll('.loan-checkbox').forEach(c=>c.checked=cb.checked);updateToolbar();}
+function openDeleteModal(){const c=getChecked();if(!c.length)return;const cont=document.getElementById('hidden-loan-ids');cont.innerHTML='';c.forEach(cb=>{const i=document.createElement('input');i.type='hidden';i.name='loan_ids';i.value=cb.value;cont.appendChild(i);});document.getElementById('modal-count').textContent=c.length;document.getElementById('delete-modal').style.display='flex';}
+function closeDeleteModal(){document.getElementById('delete-modal').style.display='none';}
+document.getElementById('bulk-delete-form').addEventListener('submit',function(){document.getElementById('form-reason').value=document.getElementById('delete-reason').value;});
+document.getElementById('delete-modal').addEventListener('click',function(e){if(e.target===this)closeDeleteModal();});
 </script>
 {% endblock %}
