@@ -32,13 +32,20 @@
 
   {% if loans %}
   <!-- Bulk delete toolbar (hidden until a checkbox is checked) -->
-  <div id="bulk-toolbar" class="hidden bg-red-50 border border-red-200 rounded-xl px-5 py-3 flex items-center justify-between gap-4 flex-wrap">
-    <span class="text-sm font-medium text-red-700">
-      <span id="selected-count">0</span> loan(s) selected
-    </span>
+  <div id="bulk-toolbar" style="display:none;" class="bg-red-50 border border-red-200 rounded-xl px-5 py-3 flex items-center justify-between gap-4 flex-wrap">
+    <div class="flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full bg-red-500"></div>
+      <span class="text-sm font-semibold text-red-700">
+        <span id="selected-count">0</span> loan(s) selected
+      </span>
+    </div>
     <button onclick="openDeleteModal()"
-            class="bg-red-600 text-white text-sm font-semibold px-5 py-2 rounded-lg hover:bg-red-700 transition">
-      🗑 Delete Selected
+            style="background:#dc2626;color:white;padding:8px 20px;border-radius:8px;font-size:14px;font-weight:600;border:none;cursor:pointer;display:flex;align-items:center;gap:8px;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+      </svg>
+      Delete Selected
     </button>
   </div>
 
@@ -105,30 +112,32 @@
 </div>
 
 <!-- ── Delete Confirm Modal ─────────────────────────────────────────── -->
-<div id="delete-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4"
-     style="background:rgba(0,0,0,0.5);">
-  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
-    <div class="flex items-center gap-3 mb-4">
-      <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<div id="delete-modal"
+     style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; padding:16px;">
+  <div style="background:white; border-radius:16px; box-shadow:0 25px 50px rgba(0,0,0,0.25); width:100%; max-width:440px; padding:32px;">
+    <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:16px;">
+      <div style="width:40px; height:40px; border-radius:50%; background:#fee2e2; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+        <svg width="20" height="20" fill="none" stroke="#dc2626" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
         </svg>
       </div>
       <div>
-        <h3 class="text-lg font-bold text-gray-900">Delete Selected Loans?</h3>
-        <p class="text-sm text-gray-500">This action cannot be undone. Loans will be archived.</p>
+        <h3 style="font-size:18px; font-weight:700; color:#111827; margin-bottom:4px;">Delete Selected Loans?</h3>
+        <p style="font-size:13px; color:#6b7280;">This action cannot be undone. Loans will be archived.</p>
       </div>
     </div>
 
-    <div class="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-5 text-sm text-red-700">
-      <strong id="modal-count">0</strong> loan(s) will be permanently deleted from <strong>{{ borrower.get_full_name|default:borrower.username }}</strong>'s account and moved to the deleted archive.
+    <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:12px 16px; margin-bottom:20px; font-size:13px; color:#b91c1c;">
+      <strong id="modal-count">0</strong> loan(s) will be permanently deleted from
+      <strong>{{ borrower.get_full_name|default:borrower.username }}</strong>'s account and moved to the deleted archive.
     </div>
 
-    <!-- Reason field -->
-    <label class="block text-sm font-medium text-gray-700 mb-1">Reason for deletion <span class="text-gray-400">(optional)</span></label>
+    <label style="display:block; font-size:13px; font-weight:500; color:#374151; margin-bottom:6px;">
+      Reason for deletion <span style="color:#9ca3af;">(optional)</span>
+    </label>
     <textarea id="delete-reason" rows="2"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-400 focus:border-transparent mb-5"
+              style="width:100%; padding:8px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:13px; resize:vertical; margin-bottom:20px; font-family:inherit;"
               placeholder="e.g. Duplicate entry, data correction…"></textarea>
 
     <form method="POST" action="{% url 'borrower_detail' borrower.id %}" id="bulk-delete-form">
@@ -136,14 +145,14 @@
       <div id="hidden-loan-ids"></div>
       <input type="hidden" name="reason" id="form-reason">
 
-      <div class="flex gap-3">
+      <div style="display:flex; gap:12px;">
         <button type="button" onclick="closeDeleteModal()"
-                class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition">
+                style="flex:1; padding:10px; border:1px solid #d1d5db; background:white; color:#374151; border-radius:8px; font-size:14px; font-weight:500; cursor:pointer;">
           Cancel
         </button>
         <button type="submit"
-                class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition">
-          Yes, Delete & Archive
+                style="flex:1; padding:10px; background:#dc2626; color:white; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer;">
+          Yes, Delete &amp; Archive
         </button>
       </div>
     </form>
@@ -159,14 +168,12 @@ function updateToolbar() {
   const checked = getChecked();
   const toolbar = document.getElementById('bulk-toolbar');
   document.getElementById('selected-count').textContent = checked.length;
-  toolbar.classList.toggle('hidden', checked.length === 0);
+  toolbar.style.display = checked.length > 0 ? 'flex' : 'none';
 
-  // Update select-all state
   const all = document.querySelectorAll('.loan-checkbox');
-  document.getElementById('select-all').indeterminate =
-    checked.length > 0 && checked.length < all.length;
-  document.getElementById('select-all').checked =
-    checked.length === all.length;
+  const selectAll = document.getElementById('select-all');
+  selectAll.indeterminate = checked.length > 0 && checked.length < all.length;
+  selectAll.checked = checked.length === all.length && all.length > 0;
 }
 
 function toggleSelectAll(cb) {
@@ -178,7 +185,6 @@ function openDeleteModal() {
   const checked = getChecked();
   if (!checked.length) return;
 
-  // Populate hidden inputs
   const container = document.getElementById('hidden-loan-ids');
   container.innerHTML = '';
   checked.forEach(cb => {
@@ -190,20 +196,19 @@ function openDeleteModal() {
   });
 
   document.getElementById('modal-count').textContent = checked.length;
-  document.getElementById('delete-modal').classList.remove('hidden');
+  const modal = document.getElementById('delete-modal');
+  modal.style.display = 'flex';
 }
 
 function closeDeleteModal() {
-  document.getElementById('delete-modal').classList.add('hidden');
+  document.getElementById('delete-modal').style.display = 'none';
 }
 
-// Sync reason textarea → hidden form field on submit
 document.getElementById('bulk-delete-form').addEventListener('submit', function() {
   document.getElementById('form-reason').value =
     document.getElementById('delete-reason').value;
 });
 
-// Close modal on backdrop click
 document.getElementById('delete-modal').addEventListener('click', function(e) {
   if (e.target === this) closeDeleteModal();
 });
