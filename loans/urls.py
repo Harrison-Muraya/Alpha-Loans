@@ -21,6 +21,9 @@ urlpatterns = [
              template_name='loans/password_reset.html',
              email_template_name='loans/password_reset_email.txt',
              subject_template_name='loans/password_reset_subject.txt',
+
+             html_email_template_name='loans/password_reset_email.html', # ← rich HTML email
+             subject_template_name='loans/password_reset_subject.txt',
          ),
          name='password_reset'),
     path('password-reset/done/',
