@@ -5,9 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}">
-    <link rel="icon" type="image/svg+xml" href="{% static 'loans/images/favicon.svg' %}">
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
     <title>{% block title %}Loan Management System{% endblock %}</title>
-    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
 </head>
 <body class="bg-gray-50 min-h-screen">
     {% if user.is_authenticated %}
@@ -16,15 +15,12 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center">
-                    <svg class="w-8 h-8 text-indigo-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <h1 class="text-xl font-bold text-gray-800">Loan Manager</h1>
+                    <img src="{% static 'images/logo.svg' %}" alt="Loan Manager" class="h-9 w-auto">
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="text-right">
                         <p class="text-sm font-medium text-gray-900">{{ user.get_full_name|default:user.username }}</p>
-                        <p class="text-xs text-gray-500">{% if user.is_staff %}Admin{% else %}{% endif %}</p>
+                        <p class="text-xs text-gray-500">{% if user.is_staff %}Admin{% endif %}</p>
                     </div>
                     <a href="{% url 'logout' %}" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition">
                         Logout
@@ -37,20 +33,43 @@
     <!-- Navigation -->
     <div class="bg-white border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex gap-8">
-                <a href="{% url 'dashboard' %}" class="py-4 px-2 border-b-2 {% if request.resolver_match.url_name == 'dashboard' %}border-indigo-600 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %} font-medium text-sm transition">
+            <div class="flex gap-1 overflow-x-auto">
+                <a href="{% url 'dashboard' %}"
+                   class="py-4 px-3 border-b-2 whitespace-nowrap
+                          {% if request.resolver_match.url_name == 'dashboard' %}border-indigo-600 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}
+                          font-medium text-sm transition">
                     Dashboard
                 </a>
-                <a href="{% url 'loan_list' %}" class="py-4 px-2 border-b-2 {% if request.resolver_match.url_name == 'loan_list' %}border-indigo-600 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %} font-medium text-sm transition">
+                <a href="{% url 'loan_list' %}"
+                   class="py-4 px-3 border-b-2 whitespace-nowrap
+                          {% if request.resolver_match.url_name == 'loan_list' %}border-indigo-600 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}
+                          font-medium text-sm transition">
                     Loans
                 </a>
                 {% if user.is_staff %}
-                <a href="{% url 'manage_loans' %}" class="py-4 px-2 border-b-2 {% if request.resolver_match.url_name == 'manage_loans' %}border-indigo-600 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %} font-medium text-sm transition">
+                <a href="{% url 'manage_loans' %}"
+                   class="py-4 px-3 border-b-2 whitespace-nowrap
+                          {% if request.resolver_match.url_name == 'manage_loans' %}border-indigo-600 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}
+                          font-medium text-sm transition">
                     Manage
                 </a>
-
-                 <a href="{% url 'borrower_summary' %}" class="py-4 px-2 border-b-2 {% if request.resolver_match.url_name == 'borrower_summary' %}border-indigo-600 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %} font-medium text-sm transition">
+                <a href="{% url 'borrower_summary' %}"
+                   class="py-4 px-3 border-b-2 whitespace-nowrap
+                          {% if request.resolver_match.url_name in 'borrower_summary,borrower_detail' %}border-indigo-600 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}
+                          font-medium text-sm transition">
                     Users
+                </a>
+                <a href="{% url 'deleted_loans_archive' %}"
+                   class="py-4 px-3 border-b-2 whitespace-nowrap
+                          {% if request.resolver_match.url_name == 'deleted_loans_archive' %}border-indigo-600 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}
+                          font-medium text-sm transition">
+                    Archive
+                </a>
+                <a href="{% url 'activity_log' %}"
+                   class="py-4 px-3 border-b-2 whitespace-nowrap
+                          {% if request.resolver_match.url_name == 'activity_log' %}border-indigo-600 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}
+                          font-medium text-sm transition">
+                    Activity
                 </a>
                 {% endif %}
             </div>

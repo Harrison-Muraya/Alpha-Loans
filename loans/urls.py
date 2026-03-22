@@ -14,15 +14,17 @@ urlpatterns = [
     path('manange/borrower_summary/<int:user_id>/', views.borrower_detail, name='borrower_detail'),
     path('update/<int:loan_id>/', views.update_loan, name='update_loan'),
     path('delete/<int:loan_id>/', views.delete_loan, name='delete_loan'),
-
+ 
+    # Archive & activity log
+    path('manage/deleted/', views.deleted_loans_archive, name='deleted_loans_archive'),
+    path('manage/activity/', views.activity_log, name='activity_log'),
+ 
     # Password reset flow
     path('password-reset/',
          auth_views.PasswordResetView.as_view(
              template_name='loans/password_reset.html',
-            #  email_template_name='loans/password_reset_email.txt',
-            #  subject_template_name='loans/password_reset_subject.txt',
-
-             html_email_template_name='loans/password_reset_email.html', # ← rich HTML email
+             email_template_name='loans/password_reset_email.txt',
+             html_email_template_name='loans/password_reset_email.html',
              subject_template_name='loans/password_reset_subject.txt',
          ),
          name='password_reset'),

@@ -1,0 +1,93 @@
+{% extends 'loans/base.html' %}
+{% block title %}Deleted Loans Archive{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <div class="flex justify-between items-center flex-wrap gap-4">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">Deleted Loans Archive</h2>
+      <p class="text-sm text-gray-500 mt-1">{{ total }} record{{ total|pluralize }} · Read-only audit trail</p>
+    </div>
+
+    <!-- Search -->
+    <form method="GET" class="flex gap-2">
+      <input type="text" name="q" value="{{ search }}"
+             placeholder="Search by borrower…"
+             class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-56">
+      <button type="submit"
+              class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">
+        Search
+      </button>
+      {% if search %}
+      <a href="{% url 'deleted_loans_archive' %}"
+         class="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition">
+        Clear
+      </a>
+      {% endif %}
+    </form>
+  </div>
+
+  {% if deleted_loans %}
+  <div class="bg-white rounded-xl shadow overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50 border-b border-gray-200">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Orig. ID</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Borrower</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Due</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Issue → Due</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Deleted By</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Deleted At</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for dl in deleted_loans %}
+          <tr class="hover:bg-red-50 transition">
+            <td class="px-6 py-4 text-sm text-gray-400">#{{ dl.original_loan_id }}</td>
+            <td class="px-6 py-4">
+              <p class="text-sm font-medium text-gray-900">{{ dl.borrower_full_name }}</p>
+              <p class="text-xs text-gray-400">@{{ dl.borrower_username }}</p>
+            </td>
+            <td class="px-6 py-4 text-sm font-semibold text-gray-800">KES {{ dl.amount|floatformat:2 }}</td>
+            <td class="px-6 py-4 text-sm font-semibold text-red-600">KES {{ dl.total_amount_due|floatformat:2 }}</td>
+            <td class="px-6 py-4">
+              {% if dl.is_paid %}
+              <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Paid</span>
+              {% elif dl.status == 'overdue' %}
+              <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Overdue</span>
+              {% else %}
+              <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Active</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 text-xs text-gray-500">
+              {{ dl.issue_date }}<br>→ {{ dl.due_date }}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-700">{{ dl.deleted_by_username }}</td>
+            <td class="px-6 py-4 text-xs text-gray-500">{{ dl.deleted_at|date:"d M Y" }}<br>{{ dl.deleted_at|time:"H:i" }}</td>
+            <td class="px-6 py-4 text-xs text-gray-400 max-w-[160px]">
+              {{ dl.reason|default:"—" }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="bg-white rounded-xl shadow p-12 text-center">
+    <svg class="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+    </svg>
+    <p class="text-gray-400">No deleted loans yet{% if search %} matching "{{ search }}"{% endif %}.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
