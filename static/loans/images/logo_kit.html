@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loan Manager — Logo Kit</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+
+    :root {
+      --ink:   #1C1917;
+      --blue:  #2D5BE3;
+      --sand:  #F0EDE8;
+      --cream: #FFFDF9;
+      --muted: #78716C;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0F0D0C;
+      font-family: 'DM Sans', sans-serif;
+      color: #E8E3DC;
+      min-height: 100vh;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      padding: 48px 48px 0;
+      border-bottom: 1px solid #1E1B18;
+      padding-bottom: 32px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+
+    .page-header h1 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 28px;
+      color: #F0EDE8;
+      letter-spacing: -0.4px;
+    }
+
+    .page-header p {
+      font-size: 13px;
+      color: #57534E;
+      margin-top: 4px;
+    }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--blue);
+      background: rgba(45,91,227,0.12);
+      padding: 5px 12px;
+      border-radius: 100px;
+      border: 1px solid rgba(45,91,227,0.25);
+    }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      background: #1A1714;
+      border-top: 2px solid #1A1714;
+    }
+
+    .cell {
+      background: #0F0D0C;
+      padding: 48px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cell.light-bg {
+      background: #F0EDE8;
+    }
+
+    .cell.white-bg {
+      background: #FFFDF9;
+    }
+
+    .cell.blue-bg {
+      background: #2D5BE3;
+    }
+
+    .cell-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: #57534E;
+      margin-bottom: 40px;
+    }
+
+    .light-bg .cell-label,
+    .white-bg .cell-label {
+      color: #A8A29E;
+    }
+
+    .blue-bg .cell-label {
+      color: rgba(255,255,255,0.5);
+    }
+
+    .logo-stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Sizes row ── */
+    .sizes-cell {
+      grid-column: 1 / -1;
+      background: #141210;
+      padding: 40px 48px;
+    }
+
+    .sizes-cell .cell-label {
+      margin-bottom: 32px;
+    }
+
+    .sizes-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 48px;
+      flex-wrap: wrap;
+    }
+
+    .size-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .size-tag {
+      font-size: 11px;
+      color: #57534E;
+      font-weight: 500;
+    }
+
+    /* ── Construction grid cell ── */
+    .construction-cell {
+      grid-column: 1 / -1;
+      background: #0A0908;
+      padding: 48px;
+    }
+
+    .construction-inner {
+      display: flex;
+      gap: 64px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .construction-stage {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .construction-notes {
+      flex: 1;
+      min-width: 260px;
+    }
+
+    .construction-notes h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 20px;
+      color: #F0EDE8;
+      margin-bottom: 20px;
+      letter-spacing: -0.3px;
+    }
+
+    .spec-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 11px 0;
+      border-bottom: 1px solid #1A1714;
+    }
+
+    .spec-row:last-child { border-bottom: none; }
+
+    .spec-key {
+      font-size: 12.5px;
+      color: #57534E;
+      font-weight: 500;
+    }
+
+    .spec-val {
+      font-size: 12.5px;
+      color: #A8A29E;
+      font-family: 'Courier New', monospace;
+    }
+
+    .spec-swatch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    /* ── Code cell ── */
+    .code-cell {
+      grid-column: 1 / -1;
+      background: #0C0A09;
+      padding: 48px;
+    }
+
+    .code-cell h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 20px;
+      color: #F0EDE8;
+      margin-bottom: 6px;
+    }
+
+    .code-cell .subtitle {
+      font-size: 13px;
+      color: #57534E;
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    .code-tabs {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 0;
+    }
+
+    .tab {
+      font-size: 12px;
+      font-weight: 500;
+      color: #57534E;
+      padding: 8px 18px;
+      background: #141210;
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tab.active {
+      color: #E8E3DC;
+      background: #1A1714;
+    }
+
+    .code-block {
+      background: #1A1714;
+      border-radius: 0 8px 8px 8px;
+      padding: 28px 32px;
+      overflow-x: auto;
+    }
+
+    .code-block pre {
+      font-family: 'Courier New', monospace;
+      font-size: 12.5px;
+      line-height: 1.8;
+      color: #A8A29E;
+      white-space: pre;
+    }
+
+    .code-block .kw  { color: #8BB4FF; }
+    .code-block .str { color: #86EFAC; }
+    .code-block .cmt { color: #44403C; }
+    .code-block .tag { color: #FCA5A5; }
+    .code-block .attr{ color: #FCD34D; }
+
+    /* ── Integration guide ── */
+    .guide-cell {
+      grid-column: 1 / -1;
+      background: #0F0D0C;
+      padding: 48px;
+    }
+
+    .guide-cell h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 20px;
+      color: #F0EDE8;
+      margin-bottom: 32px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 2px;
+    }
+
+    .step {
+      background: #141210;
+      border-radius: 2px;
+      padding: 28px;
+    }
+
+    .step-num {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--blue);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .step h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #E8E3DC;
+      margin-bottom: 8px;
+    }
+
+    .step p {
+      font-size: 13px;
+      color: #57534E;
+      line-height: 1.65;
+    }
+
+    .step code {
+      font-family: 'Courier New', monospace;
+      font-size: 11.5px;
+      color: #8BB4FF;
+      background: rgba(45,91,227,0.1);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    /* ── Favicon preview ── */
+    .favicon-row {
+      display: flex;
+      gap: 32px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .favicon-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .favicon-item .size-tag {
+      color: #57534E;
+    }
+
+    .favicon-bg-dark  { background: #0F0D0C; padding: 16px; border-radius: 8px; }
+    .favicon-bg-light { background: #F0EDE8; padding: 16px; border-radius: 8px; }
+    .favicon-bg-white { background: #FFFDF9; padding: 16px; border-radius: 8px; border: 1px solid #E5E0D8; }
+
+    /* ── Page footer ── */
+    .page-footer {
+      padding: 32px 48px;
+      border-top: 1px solid #1A1714;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #3A3530;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── Page Header ─── -->
+<div class="page-header">
+  <div>
+    <h1>Loan Manager — Logo Kit</h1>
+    <p>SVG assets · All variants · Integration guide</p>
+  </div>
+  <span class="badge">v1.0</span>
+</div>
+
+<!-- ─── Logo Grid ─── -->
+<div class="grid">
+
+  <!-- Dark background — primary use -->
+  <div class="cell">
+    <div class="cell-label">Primary · Dark BG</div>
+    <div class="logo-stage">
+      <!-- FULL WORDMARK LOGO — DARK BG -->
+      <svg width="220" height="52" viewBox="0 0 220 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Logomark: interlocking L + coin arc -->
+        <rect width="48" height="48" rx="12" fill="#1C1917"/>
+        <!-- Coin ring -->
+        <circle cx="24" cy="26" r="11" stroke="#F0EDE8" stroke-width="1.8" fill="none"/>
+        <!-- Tick marks at 12, 3, 6, 9 -->
+        <line x1="24" y1="15" x2="24" y2="18" stroke="#F0EDE8" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="35" y1="26" x2="32" y2="26" stroke="#F0EDE8" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="24" y1="37" x2="24" y2="34" stroke="#F0EDE8" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="13" y1="26" x2="16" y2="26" stroke="#F0EDE8" stroke-width="1.5" stroke-linecap="round"/>
+        <!-- KES symbol -->
+        <text x="24" y="30.5" text-anchor="middle" font-family="Georgia, serif" font-size="11" font-weight="700" fill="#2D5BE3">KES</text>
+        <!-- Blue accent dot -->
+        <circle cx="38" cy="14" r="4" fill="#2D5BE3"/>
+
+        <!-- Wordmark -->
+        <text x="62" y="22" font-family="Georgia, 'Times New Roman', serif" font-size="17" font-weight="700" fill="#F0EDE8" letter-spacing="-0.4">Loan</text>
+        <text x="62" y="42" font-family="Georgia, 'Times New Roman', serif" font-size="17" font-weight="400" fill="#A8A29E" letter-spacing="-0.2" font-style="italic">Manager</text>
+        <!-- vertical rule -->
+        <line x1="58" y1="8" x2="58" y2="46" stroke="#2A2520" stroke-width="1"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Light background -->
+  <div class="cell light-bg">
+    <div class="cell-label">Primary · Light BG</div>
+    <div class="logo-stage">
+      <svg width="220" height="52" viewBox="0 0 220 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="48" height="48" rx="12" fill="#1C1917"/>
+        <circle cx="24" cy="26" r="11" stroke="#F0EDE8" stroke-width="1.8" fill="none"/>
+        <line x1="24" y1="15" x2="24" y2="18" stroke="#F0EDE8" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="35" y1="26" x2="32" y2="26" stroke="#F0EDE8" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="24" y1="37" x2="24" y2="34" stroke="#F0EDE8" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="13" y1="26" x2="16" y2="26" stroke="#F0EDE8" stroke-width="1.5" stroke-linecap="round"/>
+        <text x="24" y="30.5" text-anchor="middle" font-family="Georgia, serif" font-size="11" font-weight="700" fill="#2D5BE3">KES</text>
+        <circle cx="38" cy="14" r="4" fill="#2D5BE3"/>
+        <text x="62" y="22" font-family="Georgia, 'Times New Roman', serif" font-size="17" font-weight="700" fill="#1C1917" letter-spacing="-0.4">Loan</text>
+        <text x="62" y="42" font-family="Georgia, 'Times New Roman', serif" font-size="17" font-weight="400" fill="#78716C" letter-spacing="-0.2" font-style="italic">Manager</text>
+        <line x1="58" y1="8" x2="58" y2="46" stroke="#D6D0C8" stroke-width="1"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- White background -->
+  <div class="cell white-bg">
+    <div class="cell-label">Secondary · White BG</div>
+    <div class="logo-stage">
+      <!-- Horizontal compact wordmark -->
+      <svg width="200" height="40" viewBox="0 0 200 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="40" height="40" rx="10" fill="#1C1917"/>
+        <circle cx="20" cy="21" r="9" stroke="#F0EDE8" stroke-width="1.6" fill="none"/>
+        <line x1="20" y1="12" x2="20" y2="15" stroke="#F0EDE8" stroke-width="1.4" stroke-linecap="round"/>
+        <line x1="29" y1="21" x2="26" y2="21" stroke="#F0EDE8" stroke-width="1.4" stroke-linecap="round"/>
+        <line x1="20" y1="30" x2="20" y2="27" stroke="#F0EDE8" stroke-width="1.4" stroke-linecap="round"/>
+        <line x1="11" y1="21" x2="14" y2="21" stroke="#F0EDE8" stroke-width="1.4" stroke-linecap="round"/>
+        <text x="20" y="25" text-anchor="middle" font-family="Georgia, serif" font-size="9" font-weight="700" fill="#2D5BE3">KES</text>
+        <circle cx="32" cy="9" r="4" fill="#2D5BE3"/>
+        <!-- One-line wordmark -->
+        <text x="52" y="15" font-family="Georgia, serif" font-size="13" font-weight="700" fill="#1C1917" letter-spacing="-0.3">Loan</text>
+        <text x="86" y="15" font-family="Georgia, serif" font-size="13" font-weight="400" fill="#78716C" font-style="italic" letter-spacing="-0.2"> Manager</text>
+        <!-- tagline -->
+        <text x="52" y="30" font-family="Georgia, serif" font-size="9" fill="#A8A29E" letter-spacing="1.5" font-style="normal">NAIROBI · KE</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Blue background -->
+  <div class="cell blue-bg">
+    <div class="cell-label">Reverse · Blue BG</div>
+    <div class="logo-stage">
+      <svg width="220" height="52" viewBox="0 0 220 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="48" height="48" rx="12" fill="rgba(255,255,255,0.15)"/>
+        <circle cx="24" cy="26" r="11" stroke="white" stroke-width="1.8" fill="none"/>
+        <line x1="24" y1="15" x2="24" y2="18" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="35" y1="26" x2="32" y2="26" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="24" y1="37" x2="24" y2="34" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="13" y1="26" x2="16" y2="26" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        <text x="24" y="30.5" text-anchor="middle" font-family="Georgia, serif" font-size="11" font-weight="700" fill="white">KES</text>
+        <circle cx="38" cy="14" r="4" fill="rgba(255,255,255,0.4)"/>
+        <text x="62" y="22" font-family="Georgia, 'Times New Roman', serif" font-size="17" font-weight="700" fill="white" letter-spacing="-0.4">Loan</text>
+        <text x="62" y="42" font-family="Georgia, 'Times New Roman', serif" font-size="17" font-weight="400" fill="rgba(255,255,255,0.65)" letter-spacing="-0.2" font-style="italic">Manager</text>
+        <line x1="58" y1="8" x2="58" y2="46" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Icon only — dark -->
+  <div class="cell" style="background:#141210;">
+    <div class="cell-label">Mark only · All sizes</div>
+    <div class="logo-stage">
+      <div style="display:flex; gap:28px; align-items:flex-end; flex-wrap:wrap; justify-content:center;">
+        <!-- 64px -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="64" height="64" rx="16" fill="#1C1917"/>
+            <circle cx="32" cy="34" r="15" stroke="#F0EDE8" stroke-width="2" fill="none"/>
+            <line x1="32" y1="19" x2="32" y2="23" stroke="#F0EDE8" stroke-width="2" stroke-linecap="round"/>
+            <line x1="47" y1="34" x2="43" y2="34" stroke="#F0EDE8" stroke-width="2" stroke-linecap="round"/>
+            <line x1="32" y1="49" x2="32" y2="45" stroke="#F0EDE8" stroke-width="2" stroke-linecap="round"/>
+            <line x1="17" y1="34" x2="21" y2="34" stroke="#F0EDE8" stroke-width="2" stroke-linecap="round"/>
+            <text x="32" y="38.5" text-anchor="middle" font-family="Georgia, serif" font-size="13" font-weight="700" fill="#2D5BE3">KES</text>
+            <circle cx="50" cy="16" r="7" fill="#2D5BE3"/>
+            <text x="50" y="19.5" text-anchor="middle" font-family="Georgia, serif" font-size="8" font-weight="700" fill="white">₭</text>
+          </svg>
+          <span style="font-size:11px;color:#3A3530;">64px</span>
+        </div>
+        <!-- 48px -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="48" height="48" rx="12" fill="#1C1917"/>
+            <circle cx="24" cy="26" r="11" stroke="#F0EDE8" stroke-width="1.8" fill="none"/>
+            <line x1="24" y1="15" x2="24" y2="18" stroke="#F0EDE8" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="35" y1="26" x2="32" y2="26" stroke="#F0EDE8" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="24" y1="37" x2="24" y2="34" stroke="#F0EDE8" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="13" y1="26" x2="16" y2="26" stroke="#F0EDE8" stroke-width="1.5" stroke-linecap="round"/>
+            <text x="24" y="30.5" text-anchor="middle" font-family="Georgia, serif" font-size="11" font-weight="700" fill="#2D5BE3">KES</text>
+            <circle cx="38" cy="14" r="5" fill="#2D5BE3"/>
+          </svg>
+          <span style="font-size:11px;color:#3A3530;">48px</span>
+        </div>
+        <!-- 32px -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="#1C1917"/>
+            <circle cx="16" cy="17" r="7.5" stroke="#F0EDE8" stroke-width="1.4" fill="none"/>
+            <line x1="16" y1="9.5" x2="16" y2="12" stroke="#F0EDE8" stroke-width="1.3" stroke-linecap="round"/>
+            <line x1="23.5" y1="17" x2="21" y2="17" stroke="#F0EDE8" stroke-width="1.3" stroke-linecap="round"/>
+            <line x1="16" y1="24.5" x2="16" y2="22" stroke="#F0EDE8" stroke-width="1.3" stroke-linecap="round"/>
+            <line x1="8.5" y1="17" x2="11" y2="17" stroke="#F0EDE8" stroke-width="1.3" stroke-linecap="round"/>
+            <text x="16" y="20.5" text-anchor="middle" font-family="Georgia, serif" font-size="7" font-weight="700" fill="#2D5BE3">KES</text>
+            <circle cx="25.5" cy="8" r="3.5" fill="#2D5BE3"/>
+          </svg>
+          <span style="font-size:11px;color:#3A3530;">32px</span>
+        </div>
+        <!-- 20px -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="20" height="20" rx="5" fill="#1C1917"/>
+            <circle cx="10" cy="11" r="5" stroke="#F0EDE8" stroke-width="1.2" fill="none"/>
+            <circle cx="16" cy="5" r="2.5" fill="#2D5BE3"/>
+          </svg>
+          <span style="font-size:11px;color:#3A3530;">20px</span>
+        </div>
+        <!-- 16px -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="16" height="16" rx="4" fill="#1C1917"/>
+            <circle cx="8" cy="9" r="4" stroke="#F0EDE8" stroke-width="1.2" fill="none"/>
+            <circle cx="13" cy="4" r="2" fill="#2D5BE3"/>
+          </svg>
+          <span style="font-size:11px;color:#3A3530;">16px</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monochrome -->
+  <div class="cell" style="background:#1A1714;">
+    <div class="cell-label">Monochrome</div>
+    <div class="logo-stage" style="flex-direction:column;gap:32px;">
+      <!-- All white -->
+      <svg width="180" height="44" viewBox="0 0 180 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="40" height="40" rx="10" fill="white"/>
+        <circle cx="20" cy="21" r="9" stroke="#1C1917" stroke-width="1.6" fill="none"/>
+        <text x="20" y="25" text-anchor="middle" font-family="Georgia, serif" font-size="9" font-weight="700" fill="#1C1917">KES</text>
+        <circle cx="32" cy="9" r="4" fill="#1C1917"/>
+        <text x="52" y="17" font-family="Georgia, serif" font-size="14" font-weight="700" fill="white" letter-spacing="-0.4">Loan</text>
+        <text x="52" y="35" font-family="Georgia, serif" font-size="14" font-weight="400" fill="rgba(255,255,255,0.45)" font-style="italic">Manager</text>
+      </svg>
+      <!-- All black (for print) -->
+      <svg width="180" height="44" viewBox="0 0 180 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="40" height="40" rx="10" fill="#1C1917"/>
+        <circle cx="20" cy="21" r="9" stroke="#F0EDE8" stroke-width="1.6" fill="none"/>
+        <text x="20" y="25" text-anchor="middle" font-family="Georgia, serif" font-size="9" font-weight="700" fill="#F0EDE8">KES</text>
+        <circle cx="32" cy="9" r="4" fill="#57534E"/>
+        <text x="52" y="17" font-family="Georgia, serif" font-size="14" font-weight="700" fill="#1C1917" letter-spacing="-0.4">Loan</text>
+        <text x="52" y="35" font-family="Georgia, serif" font-size="14" font-weight="400" fill="#78716C" font-style="italic">Manager</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ── Spec sheet ── -->
+  <div class="construction-cell">
+    <div class="cell-label">Design Specification</div>
+    <div class="construction-inner">
+
+      <!-- Large mark for reference -->
+      <div class="construction-stage">
+        <svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- construction guides -->
+          <rect x="0.5" y="0.5" width="159" height="159" rx="3" stroke="#1E1B18" stroke-width="1" stroke-dasharray="4 4" fill="none"/>
+          <line x1="80" y1="0" x2="80" y2="160" stroke="#1E1B18" stroke-width="0.5" stroke-dasharray="3 3"/>
+          <line x1="0" y1="80" x2="160" y2="80" stroke="#1E1B18" stroke-width="0.5" stroke-dasharray="3 3"/>
+          <circle cx="80" cy="80" r="79.5" stroke="#1E1B18" stroke-width="0.5" stroke-dasharray="3 3" fill="none"/>
+          <!-- The actual mark -->
+          <rect x="24" y="24" width="112" height="112" rx="28" fill="#1C1917"/>
+          <circle cx="80" cy="86" r="30" stroke="#F0EDE8" stroke-width="4" fill="none"/>
+          <line x1="80" y1="56" x2="80" y2="64" stroke="#F0EDE8" stroke-width="3.5" stroke-linecap="round"/>
+          <line x1="110" y1="86" x2="102" y2="86" stroke="#F0EDE8" stroke-width="3.5" stroke-linecap="round"/>
+          <line x1="80" y1="116" x2="80" y2="108" stroke="#F0EDE8" stroke-width="3.5" stroke-linecap="round"/>
+          <line x1="50" y1="86" x2="58" y2="86" stroke="#F0EDE8" stroke-width="3.5" stroke-linecap="round"/>
+          <text x="80" y="93" text-anchor="middle" font-family="Georgia, serif" font-size="20" font-weight="700" fill="#2D5BE3">KES</text>
+          <circle cx="108" cy="48" r="14" fill="#2D5BE3"/>
+          <text x="108" y="52.5" text-anchor="middle" font-family="Georgia, serif" font-size="14" font-weight="700" fill="white">₭</text>
+          <!-- dimension callouts -->
+          <line x1="24" y1="148" x2="136" y2="148" stroke="#2D5BE3" stroke-width="0.8"/>
+          <line x1="24" y1="144" x2="24" y2="152" stroke="#2D5BE3" stroke-width="0.8"/>
+          <line x1="136" y1="144" x2="136" y2="152" stroke="#2D5BE3" stroke-width="0.8"/>
+          <text x="80" y="157" text-anchor="middle" font-family="sans-serif" font-size="8" fill="#2D5BE3">112 u</text>
+        </svg>
+      </div>
+
+      <div class="construction-notes">
+        <h3>Token Specifications</h3>
+        <div class="spec-row">
+          <span class="spec-key">Container shape</span>
+          <span class="spec-val">Rounded rect · r=25% width</span>
+        </div>
+        <div class="spec-row">
+          <span class="spec-key">Background</span>
+          <span class="spec-swatch spec-val">
+            <span class="swatch" style="background:#1C1917;border:1px solid #333;"></span>
+            #1C1917
+          </span>
+        </div>
+        <div class="spec-row">
+          <span class="spec-key">Coin stroke</span>
+          <span class="spec-swatch spec-val">
+            <span class="swatch" style="background:#F0EDE8;"></span>
+            #F0EDE8
+          </span>
+        </div>
+        <div class="spec-row">
+          <span class="spec-key">Accent dot</span>
+          <span class="spec-swatch spec-val">
+            <span class="swatch" style="background:#2D5BE3;"></span>
+            #2D5BE3
+          </span>
+        </div>
+        <div class="spec-row">
+          <span class="spec-key">Currency text</span>
+          <span class="spec-swatch spec-val">
+            <span class="swatch" style="background:#2D5BE3;"></span>
+            #2D5BE3 · Georgia Bold
+          </span>
+        </div>
+        <div class="spec-row">
+          <span class="spec-key">Wordmark (bold)</span>
+          <span class="spec-val">DM Serif Display / Georgia</span>
+        </div>
+        <div class="spec-row">
+          <span class="spec-key">Wordmark (italic)</span>
+          <span class="spec-val">DM Serif Display Italic</span>
+        </div>
+        <div class="spec-row">
+          <span class="spec-key">Min clear space</span>
+          <span class="spec-val">0.5× mark height all sides</span>
+        </div>
+        <div class="spec-row">
+          <span class="spec-key">Min size (digital)</span>
+          <span class="spec-val">20px mark · 32px wordmark</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Code snippets ── -->
+  <div class="code-cell">
+    <h3>Integration Code</h3>
+    <p class="subtitle">Copy-paste ready snippets for every use case in your Django project.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap;">
+
+      <!-- Navbar -->
+      <div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:#57534E;margin-bottom:12px;">① Navbar (base.html)</div>
+        <div class="code-block">
+<pre><span class="cmt">&lt;!-- Replace the existing logo section --&gt;</span>
+<span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"flex items-center"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;img</span>
+    <span class="attr">src</span>=<span class="str">"{% static 'images/logo.svg' %}"</span>
+    <span class="attr">alt</span>=<span class="str">"Loan Manager"</span>
+    <span class="attr">class</span>=<span class="str">"h-9 w-auto"</span>
+  <span class="tag">/&gt;</span>
+<span class="tag">&lt;/div&gt;</span></pre>
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:#57534E;margin-bottom:12px;">② Email template</div>
+        <div class="code-block">
+<pre><span class="cmt">&lt;!-- In password_reset_email.html --&gt;</span>
+<span class="tag">&lt;img</span>
+  <span class="attr">src</span>=<span class="str">"{{ protocol }}://{{ domain }}/static/images/logo-email.png"</span>
+  <span class="attr">alt</span>=<span class="str">"Loan Manager"</span>
+  <span class="attr">width</span>=<span class="str">"160"</span>
+  <span class="attr">height</span>=<span class="str">"38"</span>
+  <span class="attr">style</span>=<span class="str">"display:block;"</span>
+<span class="tag">/&gt;</span>
+<span class="cmt">&lt;!-- SVG inline also works for modern clients --&gt;</span></pre>
+        </div>
+      </div>
+
+      <!-- Favicon -->
+      <div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:#57534E;margin-bottom:12px;">③ Favicon (base.html &lt;head&gt;)</div>
+        <div class="code-block">
+<pre><span class="tag">&lt;link</span> <span class="attr">rel</span>=<span class="str">"icon"</span> <span class="attr">type</span>=<span class="str">"image/svg+xml"</span>
+      <span class="attr">href</span>=<span class="str">"{% static 'images/favicon.svg' %}"</span><span class="tag">/&gt;</span>
+<span class="tag">&lt;link</span> <span class="attr">rel</span>=<span class="str">"icon"</span> <span class="attr">type</span>=<span class="str">"image/png"</span> <span class="attr">sizes</span>=<span class="str">"32x32"</span>
+      <span class="attr">href</span>=<span class="str">"{% static 'images/favicon-32.png' %}"</span><span class="tag">/&gt;</span>
+<span class="tag">&lt;link</span> <span class="attr">rel</span>=<span class="str">"apple-touch-icon"</span>
+      <span class="attr">href</span>=<span class="str">"{% static 'images/apple-touch-icon.png' %}"</span><span class="tag">/&gt;</span></pre>
+        </div>
+      </div>
+
+      <!-- settings.py -->
+      <div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:#57534E;margin-bottom:12px;">④ settings.py — static dirs</div>
+        <div class="code-block">
+<pre><span class="cmt"># Make sure this is in settings.py</span>
+<span class="kw">STATICFILES_DIRS</span> = [
+    <span class="kw">BASE_DIR</span> / <span class="str">"theme"</span> / <span class="str">"static"</span>,
+]
+
+<span class="cmt"># Place logo files at:</span>
+<span class="cmt"># theme/static/images/logo.svg</span>
+<span class="cmt"># theme/static/images/favicon.svg</span>
+<span class="cmt"># theme/static/images/logo-email.png</span></pre>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Integration guide ── -->
+  <div class="guide-cell">
+    <h3>Step-by-step Integration</h3>
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num">Step 01</div>
+        <h4>Save the SVG files</h4>
+        <p>Download the three files from this kit: <code>logo.svg</code> (full wordmark), <code>favicon.svg</code> (mark only), and <code>logo-email.png</code>. Place them all in <code>theme/static/images/</code>.</p>
+      </div>
+
+      <div class="step">
+        <div class="step-num">Step 02</div>
+        <h4>Update base.html navbar</h4>
+        <p>Find the existing logo block in <code>templates/loans/base.html</code> (the SVG coin icon + "Loan Manager" text). Replace it with an <code>&lt;img&gt;</code> tag pointing to <code>{% static 'images/logo.svg' %}</code> with <code>class="h-9 w-auto"</code>.</p>
+      </div>
+
+      <div class="step">
+        <div class="step-num">Step 03</div>
+        <h4>Add favicon to &lt;head&gt;</h4>
+        <p>In <code>base.html</code> inside <code>&lt;head&gt;</code>, paste the three <code>&lt;link&gt;</code> tags from the code snippet above. The SVG favicon works in all modern browsers and scales perfectly at any size.</p>
+      </div>
+
+      <div class="step">
+        <div class="step-num">Step 04</div>
+        <h4>Email — use PNG fallback</h4>
+        <p>Email clients (especially Gmail, Outlook) block external SVGs. Export a <code>logo-email.png</code> at 2× resolution (320×76px) from any browser or Inkscape. Use that in the <code>&lt;img&gt;</code> tag inside <code>password_reset_email.html</code>.</p>
+      </div>
+
+      <div class="step">
+        <div class="step-num">Step 05</div>
+        <h4>Collect static</h4>
+        <p>After placing files, run <code>python manage.py collectstatic</code> so the files are copied to <code>staticfiles/</code> and served by Nginx in production. No server restart needed.</p>
+      </div>
+
+      <div class="step">
+        <div class="step-num">Step 06</div>
+        <h4>Verify in browser</h4>
+        <p>Hard-refresh (<code>Ctrl+Shift+R</code>) and check the navbar, browser tab favicon, and send a test password-reset email. On mobile, the <code>apple-touch-icon</code> shows when users add the site to their home screen.</p>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /grid -->
+
+<div class="page-footer">
+  <span>Loan Manager · Brand Assets v1.0</span>
+  <span>SVG · Scalable · Production-ready</span>
+</div>
+
+</body>
+</html>
