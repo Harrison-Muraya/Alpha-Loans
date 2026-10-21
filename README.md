@@ -139,7 +139,7 @@ sudo systemctl status Alpha-Loans
 sudo journalctl -u Alpha-Loans -n 50
 ```
 
-`deploy/deploy.sh` is that sequence, plus a Tailwind build when `npm` is installed.
+`deploy/deploy.sh` is that sequence, plus a Tailwind build when `npm` is installed. It collects static files before migrating, and retries `migrate` up to five times (3s, 6s, 12s, 24s) when the database drops the connection. The service restarts only after migrate succeeds.
 
 ## GitHub Actions
 
