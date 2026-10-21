@@ -84,7 +84,7 @@ class UserRegistrationForm(forms.ModelForm):
 class LoanForm(forms.ModelForm):
     class Meta:
         model = Loan
-        fields = ['borrower', 'amount', 'due_date']
+        fields = ['borrower', 'amount', 'issue_date', 'due_date']
         widgets = {
             'borrower': forms.Select(attrs={
                 'class': 'px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 w-full'
@@ -92,6 +92,10 @@ class LoanForm(forms.ModelForm):
             'amount': forms.NumberInput(attrs={
                 'class': 'px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 w-full',
                 'placeholder': 'Enter amount',
+            }),
+            'issue_date': forms.DateInput(attrs={
+                'class': 'px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 w-full',
+                'type': 'date',
             }),
             'due_date': forms.DateInput(attrs={
                 'class': 'px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 w-full',
@@ -102,8 +106,14 @@ class LoanForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['borrower'].queryset = User.objects.filter(is_staff=False)
+        self.fields['issue_date'].required = False
+        self.fields['issue_date'].initial = timezone.localdate()
         self.fields['due_date'].required = False
         self.fields['due_date'].initial = month_end()
+
+    def clean_issue_date(self):
+        issue_date = self.cleaned_data.get('issue_date')
+        return issue_date or timezone.localdate()
 
     def clean_due_date(self):
         due_date = self.cleaned_data.get('due_date')

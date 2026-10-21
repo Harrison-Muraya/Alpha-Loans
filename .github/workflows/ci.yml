@@ -61,11 +61,21 @@ jobs:
       - name: Install Python dependencies
         run: python -m pip install -r requirements.txt -r requirements-dev.txt
 
+      - name: Lint
+        run: ruff check .
+
+      - name: Django system check
+        run: python manage.py check
+
+      - name: Django deploy check
+        env:
+          SECRET_KEY: alpha-loans-ci-7f3a9c2e1b84d6f0a5c7e9b1d3f6a8c0e2b4d6f8a1b3
+          USE_HTTPS: "True"
+          SECURE_HSTS_PRELOAD: "True"
+        run: python manage.py check --deploy --fail-level WARNING
+
       - name: Check migrations are committed
         run: python manage.py makemigrations --check --dry-run
 
       - name: Run tests
         run: python manage.py test --verbosity 1
-
-      - name: Lint
-        run: ruff check .

@@ -7,11 +7,16 @@ DEPLOY_PATH="${DEPLOY_PATH:-/var/www/Alpha-Loans}"
 cd "$DEPLOY_PATH"
 
 if [ -f venv/bin/activate ]; then
+  # activate references unset variables; nounset would abort the deploy.
+  set +u
   # shellcheck disable=SC1091
   source venv/bin/activate
+  set -u
 elif [ -f .venv/bin/activate ]; then
+  set +u
   # shellcheck disable=SC1091
   source .venv/bin/activate
+  set -u
 else
   echo "No virtualenv at $DEPLOY_PATH/venv" >&2
   exit 1

@@ -2,7 +2,7 @@ import threading
 from decimal import Decimal
 
 from django.db import connections
-from django.test import Client, TestCase, TransactionTestCase
+from django.test import Client, TestCase, TransactionTestCase, skipUnlessDBFeature
 from django.urls import reverse
 
 from loans.models import Loan, Payment
@@ -102,6 +102,7 @@ class RecordPaymentTests(TestCase):
 
 
 class ConcurrentPaymentTests(TransactionTestCase):
+    @skipUnlessDBFeature('has_select_for_update')
     def test_concurrent_full_payments_cannot_both_succeed(self):
         staff = make_user('race-staff', staff=True)
         borrower = make_user('race-borrower')

@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from django.conf import settings
-from django.urls import resolve
+from django.urls import Resolver404, resolve
 from django.utils import timezone
 
 from .models import ActivityLog
@@ -45,16 +45,19 @@ class ActivityLogMiddleware:
         if not getattr(request, 'user', None) or not request.user.is_authenticated:
             return response
 
+        if response.status_code >= 400:
+            return response
+
         path = request.path
         if any(path.startswith(prefix) for prefix in SKIP_PATHS):
             return response
 
         try:
             url_name = resolve(path).url_name
-            if url_name in self.SKIP_URL_NAMES:
-                return response
-        except Exception:
-            pass
+        except Resolver404:
+            return response
+        if url_name in self.SKIP_URL_NAMES:
+            return response
 
         # POST requests are logged as specific actions in views.py
         if request.method == 'POST':

@@ -16,6 +16,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from .db import lock_rows
 from .forms import LoanForm, LoanUpdateForm, UserRegistrationForm
 from .lockout import clear_login_failures, login_is_locked, record_login_failure
 from .models import (
@@ -209,7 +210,7 @@ def loan_list(request):
     elif status_filter == 'active':
         loans = loans.filter(status='active', is_paid=False)
 
-    paginator = Paginator(loans, 25)
+    paginator = Paginator(loans.with_totals().order_by('-created_at', '-pk'), 25)
     loans_page = paginator.get_page(request.GET.get('page', 1))
 
     context = {
@@ -249,7 +250,7 @@ def manage_loans(request):
             | Q(borrower__last_name__icontains=q)
         )
 
-    paginator = Paginator(loans, 25)
+    paginator = Paginator(loans.with_totals().order_by('-created_at', '-pk'), 25)
     loans_page = paginator.get_page(request.GET.get('page', 1))
 
     context = {'form': form, 'loans': loans_page, 'q': q}
@@ -342,8 +343,7 @@ def borrower_detail(request, user_id):
 
         with transaction.atomic():
             selected = list(
-                Loan.objects.select_for_update(of=('self',))
-                .filter(id__in=loan_ids, borrower=borrower)
+                lock_rows(Loan.objects.filter(id__in=loan_ids, borrower=borrower))
                 .select_related('borrower')
             )
             for loan in selected:
@@ -394,7 +394,7 @@ def record_payment(request, loan_id):
 
     with transaction.atomic():
         loan = get_object_or_404(
-            Loan.objects.select_for_update(of=('self',)).select_related('borrower'),
+            lock_rows(Loan.objects.select_related('borrower')),
             id=loan_id,
         )
         balance = loan.balance_remaining()
@@ -456,7 +456,7 @@ def update_loan(request, loan_id):
 def delete_loan(request, loan_id):
     with transaction.atomic():
         loan = get_object_or_404(
-            Loan.objects.select_for_update(of=('self',)).select_related('borrower'),
+            lock_rows(Loan.objects.select_related('borrower')),
             id=loan_id,
         )
         borrower_username = loan.borrower.username
@@ -476,7 +476,11 @@ def delete_loan(request, loan_id):
 @user_passes_test(is_staff)
 def export_borrower_pdf(request, user_id):
     borrower = get_object_or_404(User, id=user_id)
-    loans = Loan.objects.filter(borrower=borrower).prefetch_related('payments')
+    loans = (
+        Loan.objects.filter(borrower=borrower)
+        .with_totals()
+        .prefetch_related('payments')
+    )
     pdf = generate_borrower_statement(borrower, loans)
     response = HttpResponse(pdf, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="statement_{borrower.username}.pdf"'
@@ -486,7 +490,12 @@ def export_borrower_pdf(request, user_id):
 @login_required
 @user_passes_test(is_staff)
 def export_loans_excel(request):
-    loans = Loan.objects.all().select_related('borrower').prefetch_related('payments')
+    loans = (
+        Loan.objects.all()
+        .select_related('borrower')
+        .with_totals()
+        .prefetch_related('payments')
+    )
     xlsx = generate_loans_excel(loans)
     response = HttpResponse(
         xlsx,

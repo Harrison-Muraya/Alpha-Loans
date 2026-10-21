@@ -4,25 +4,33 @@ from django.contrib.auth.models import User
 from django.db import models, transaction
 from django.db.models import DecimalField, ExpressionWrapper, F, Sum, Value
 from django.db.models.functions import Coalesce
+from django.utils import timezone
+
+_UNSET = object()
 
 MONEY = DecimalField(max_digits=14, decimal_places=2)
+PRECISE = DecimalField(max_digits=24, decimal_places=8)
 ZERO = Value(Decimal('0.00'), output_field=MONEY)
+
+
+def _precise(number):
+    return Value(Decimal(number), output_field=PRECISE)
 
 
 def loan_due_expression(prefix=''):
     """SQL for Loan.total_amount_due(), including the penalty on principal + interest.
 
     total = amount * (1 + interest_rate/100) * (1 + penalty_rate/100)
+    Rates are multiplied by 0.01 so SQLite does not integer-divide the percentage.
     A zero penalty rate contributes nothing, matching calculate_penalty().
+    Build this once per query: Django mutates expression nodes.
     """
-    hundred = Value(Decimal('100'))
-    one = Value(Decimal('1'))
     amount = F(f'{prefix}amount')
-    interest_rate = F(f'{prefix}interest_rate')
-    penalty_rate = F(f'{prefix}penalty_rate')
+    interest_factor = _precise('1') + F(f'{prefix}interest_rate') * _precise('0.01')
+    penalty_factor = _precise('1') + F(f'{prefix}penalty_rate') * _precise('0.01')
     return ExpressionWrapper(
-        amount * (one + interest_rate / hundred) * (one + penalty_rate / hundred),
-        output_field=MONEY,
+        amount * interest_factor * penalty_factor,
+        output_field=PRECISE,
     )
 
 
@@ -46,6 +54,63 @@ class LoanQuerySet(models.QuerySet):
                 loan.archive(reason='Deleted')
         return len(loans), {'loans.Loan': len(loans)}
 
+    def update(self, **kwargs):
+        """Keep status and is_paid describing one fact, matching Loan.save()."""
+        if 'status' not in kwargs and 'is_paid' not in kwargs:
+            return super().update(**kwargs)
+
+        kwargs['updated_at'] = kwargs.get('updated_at', timezone.now())
+        status = kwargs.get('status', _UNSET)
+        is_paid = kwargs.get('is_paid', _UNSET)
+
+        if status is not _UNSET and is_paid is not _UNSET:
+            if status == 'paid' or is_paid:
+                kwargs['status'] = 'paid'
+                kwargs['is_paid'] = True
+            return super().update(**kwargs)
+
+        if status == 'paid' or is_paid is True:
+            kwargs['status'] = 'paid'
+            kwargs['is_paid'] = True
+            return super().update(**kwargs)
+
+        with transaction.atomic(using=self.db):
+            if status is not _UNSET:
+                # A paid flag still on the row wins, the same way save() does.
+                changed = super(LoanQuerySet, self.filter(is_paid=True)).update(
+                    **{**kwargs, 'status': 'paid', 'is_paid': True}
+                )
+                changed += super(LoanQuerySet, self.filter(is_paid=False)).update(
+                    **{**kwargs, 'status': status, 'is_paid': False}
+                )
+                return changed
+            changed = super(LoanQuerySet, self.filter(status='paid')).update(
+                **{**kwargs, 'status': 'paid', 'is_paid': True}
+            )
+            changed += super(LoanQuerySet, self.exclude(status='paid')).update(
+                **{**kwargs, 'is_paid': False}
+            )
+            return changed
+
+    def bulk_update(self, objs, fields, batch_size=None):
+        field_list = list(fields)
+        if 'status' in field_list or 'is_paid' in field_list:
+            for obj in objs:
+                if obj.status == 'paid':
+                    obj.is_paid = True
+                elif obj.is_paid:
+                    obj.status = 'paid'
+            if 'status' not in field_list:
+                field_list.append('status')
+            if 'is_paid' not in field_list:
+                field_list.append('is_paid')
+            if 'updated_at' not in field_list:
+                field_list.append('updated_at')
+                now = timezone.now()
+                for obj in objs:
+                    obj.updated_at = now
+        return super().bulk_update(objs, field_list, batch_size=batch_size)
+
 
 class Loan(models.Model):
     STATUS_CHOICES = [
@@ -56,11 +121,16 @@ class Loan(models.Model):
 
     borrower = models.ForeignKey(User, on_delete=models.PROTECT, related_name='loans')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    interest_rate = models.DecimalField(max_digits=5, decimal_places=2, default=20.00)
-    # Default matches migration 0002 and the stated 40% late-payment terms.
-    penalty_rate = models.DecimalField(max_digits=5, decimal_places=2, default=40.00)
+    interest_rate = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal('20.00')
+    )
+    # Flat rate staff set by hand. Left at 0 so new loans do not silently add the
+    # 40% figure shown in the UI. mark_overdue_loans does not fill this in.
+    penalty_rate = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal('0.00')
+    )
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='active')
-    issue_date = models.DateField(auto_now_add=True)
+    issue_date = models.DateField(default=timezone.localdate)
     due_date = models.DateField()
     is_paid = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -169,6 +239,10 @@ class Loan(models.Model):
             ])
             super().delete()
             return deleted
+
+    def delete(self, using=None, keep_parents=False):
+        """Archive before the row goes, so a direct delete keeps the payment trail."""
+        self.archive()
 
 
 class Payment(models.Model):

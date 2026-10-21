@@ -17,7 +17,6 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
-from weasyprint import HTML
 
 
 # ── PDF via WeasyPrint ────────────────────────────────────────────────────────
@@ -26,7 +25,12 @@ def generate_borrower_statement(borrower, loans) -> bytes:
     """
     Render the loans/pdf_statement.html template and convert to PDF.
     Returns PDF bytes.
+
+    Imported here so a machine without the WeasyPrint system libraries can
+    still boot the rest of the app.
     """
+    from weasyprint import HTML
+
     # Build context
     loans_list = list(loans)
     total_loaned = sum(loan.amount for loan in loans_list)

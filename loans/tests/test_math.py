@@ -1,17 +1,30 @@
+from datetime import date
 from decimal import Decimal
 
 from django.test import TestCase
+from django.urls import reverse
+from django.utils import timezone
 
 from loans.models import Loan, loan_due_expression, sum_money
 from loans.tests.helpers import make_loan, make_payment, make_user
 
 
 class LoanMathTests(TestCase):
-    def test_new_loans_default_to_the_stated_penalty(self):
+    def test_new_loans_do_not_silently_include_a_penalty(self):
         self.assertEqual(
             Loan._meta.get_field('penalty_rate').get_default(),
-            Decimal('40'),
+            Decimal('0.00'),
         )
+        borrower = make_user('default-penalty')
+        loan = Loan.objects.create(
+            borrower=borrower,
+            amount=Decimal('1000.00'),
+            due_date=timezone.localdate(),
+        )
+        loan.refresh_from_db()
+        self.assertEqual(loan.penalty_rate, Decimal('0.00'))
+        self.assertEqual(loan.interest_rate, Decimal('20.00'))
+        self.assertEqual(loan.total_amount_due(), Decimal('1200.00'))
 
     def setUp(self):
         self.borrower = make_user('math-borrower')
@@ -73,6 +86,58 @@ class LoanMathTests(TestCase):
         loan.refresh_from_db()
         self.assertTrue(loan.is_paid)
         self.assertEqual(loan.status, 'paid')
+
+    def test_issue_date_defaults_to_today_and_can_be_backdated(self):
+        today = timezone.localdate()
+        fresh = make_loan(self.borrower)
+        self.assertEqual(fresh.issue_date, today)
+        backdated = make_loan(self.borrower, issue_date=date(2024, 5, 1))
+        backdated.refresh_from_db()
+        self.assertEqual(backdated.issue_date, date(2024, 5, 1))
+
+    def test_staff_can_set_issue_date_on_the_manage_form(self):
+        staff = make_user('issue-staff', staff=True)
+        self.client.force_login(staff)
+        response = self.client.post(reverse('manage_loans'), {
+            'borrower': self.borrower.id,
+            'amount': '1000.00',
+            'issue_date': '2024-05-01',
+            'due_date': '2024-06-30',
+        })
+        self.assertRedirects(response, reverse('manage_loans'))
+        loan = Loan.objects.get(borrower=self.borrower)
+        self.assertEqual(loan.issue_date, date(2024, 5, 1))
+        self.assertEqual(loan.due_date, date(2024, 6, 30))
+
+    def test_blank_issue_date_on_the_form_uses_today(self):
+        staff = make_user('issue-staff-blank', staff=True)
+        self.client.force_login(staff)
+        response = self.client.post(reverse('manage_loans'), {
+            'borrower': self.borrower.id,
+            'amount': '250.00',
+            'issue_date': '',
+            'due_date': '',
+        })
+        self.assertRedirects(response, reverse('manage_loans'))
+        loan = Loan.objects.get(borrower=self.borrower)
+        self.assertEqual(loan.issue_date, timezone.localdate())
+
+    def test_queryset_update_keeps_paid_flags_together(self):
+        loan = make_loan(self.borrower, status='active', is_paid=False)
+        Loan.objects.filter(pk=loan.pk).update(status='paid')
+        loan.refresh_from_db()
+        self.assertEqual(loan.status, 'paid')
+        self.assertTrue(loan.is_paid)
+
+        Loan.objects.filter(pk=loan.pk).update(status='overdue', is_paid=False)
+        loan.refresh_from_db()
+        self.assertEqual(loan.status, 'overdue')
+        self.assertFalse(loan.is_paid)
+
+        Loan.objects.filter(pk=loan.pk).update(is_paid=True)
+        loan.refresh_from_db()
+        self.assertEqual(loan.status, 'paid')
+        self.assertTrue(loan.is_paid)
 
     def test_annotated_paid_sum_is_not_multiplied_by_payment_rows(self):
         loan = make_loan(self.borrower, amount='1000', interest='20', penalty='40')

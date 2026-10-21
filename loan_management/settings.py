@@ -101,16 +101,31 @@ TEMPLATES = [
 WSGI_APPLICATION = 'loan_management.wsgi.application'
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('DB_NAME'),
-        'USER': env('DB_USER'),
-        'PASSWORD': env('DB_PASSWORD'),
-        'HOST': env('DB_HOST'),
-        'PORT': env('DB_PORT'),
+# DB_ENGINE=sqlite is the laptop path (the old local settings file used SQLite).
+# Leave DB_ENGINE unset on the server: an existing .env with DB_NAME stays on PostgreSQL.
+_db_engine = env('DB_ENGINE', default='').strip().lower()
+if _db_engine in ('sqlite', 'sqlite3', 'django.db.backends.sqlite3'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': env('SQLITE_PATH', default=str(BASE_DIR / 'db.sqlite3')),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': env('DB_NAME'),
+            'USER': env('DB_USER'),
+            'PASSWORD': env('DB_PASSWORD'),
+            'HOST': env('DB_HOST'),
+            'PORT': env('DB_PORT'),
+        }
+    }
+
+_npm_bin = env('NPM_BIN_PATH', default='').strip()
+if _npm_bin:
+    NPM_BIN_PATH = _npm_bin
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')

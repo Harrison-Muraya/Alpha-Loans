@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 from io import StringIO
 
 from django.core.management import call_command, get_commands
@@ -46,6 +47,18 @@ class MarkOverdueTests(TestCase):
         self.assertEqual(future.status, 'active')
         self.assertEqual(paid.status, 'paid')
         self.assertTrue(paid.is_paid)
+
+    def test_marking_overdue_does_not_apply_a_penalty(self):
+        loan = make_loan(
+            self.borrower,
+            penalty='0',
+            due=self.today - timedelta(days=1),
+        )
+        call_command('mark_overdue_loans', stdout=StringIO())
+        loan.refresh_from_db()
+        self.assertEqual(loan.status, 'overdue')
+        self.assertEqual(loan.penalty_rate, Decimal('0'))
+        self.assertEqual(loan.calculate_penalty(), Decimal('0'))
 
     def test_dry_run_does_not_write(self):
         loan = make_loan(self.borrower, due=self.today - timedelta(days=2))

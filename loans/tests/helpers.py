@@ -19,10 +19,11 @@ def make_loan(
     due=None,
     status='active',
     is_paid=False,
+    issue_date=None,
 ):
     if due is None:
         due = timezone.localdate() + timedelta(days=30)
-    return Loan.objects.create(
+    fields = dict(
         borrower=borrower,
         amount=Decimal(amount),
         interest_rate=Decimal(interest),
@@ -31,6 +32,9 @@ def make_loan(
         status=status,
         is_paid=is_paid,
     )
+    if issue_date is not None:
+        fields['issue_date'] = issue_date
+    return Loan.objects.create(**fields)
 
 
 def make_payment(loan, amount, method='cash', user=None):

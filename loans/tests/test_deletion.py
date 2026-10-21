@@ -64,6 +64,14 @@ class DeleteLoanTests(TestCase):
             'Duplicate',
         )
 
+    def test_instance_delete_archives_payments(self):
+        loan_id = self.loan.id
+        self.loan.delete()
+        self.assertFalse(Loan.objects.filter(pk=loan_id).exists())
+        self.assertFalse(Payment.objects.filter(pk=self.payment.pk).exists())
+        self.assertEqual(ArchivedPayment.objects.count(), 1)
+        self.assertEqual(DeletedLoan.objects.get().original_loan_id, loan_id)
+
     def test_queryset_delete_also_archives(self):
         Loan.objects.filter(pk=self.loan.pk).delete()
         self.assertFalse(Payment.objects.exists())

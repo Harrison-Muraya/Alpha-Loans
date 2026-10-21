@@ -20,7 +20,7 @@ The current site is plain HTTP at `http://197.248.201.233:9000`. HTTPS settings 
 
 ## Local setup
 
-Python 3.12 and PostgreSQL. From the repo root:
+Python 3.12. PostgreSQL matches production. A laptop can use SQLite instead: set `DB_ENGINE=sqlite` in `.env` (and you can omit the `DB_*` variables). Payment recording locks the loan row on PostgreSQL so two people cannot both take the remaining balance. SQLite cannot take that lock; use PostgreSQL if you need to try that case. From the repo root:
 
 ```bash
 python -m venv venv
@@ -68,6 +68,20 @@ Defaults that keep the current hosts working when the variable is unset:
 
 There is no CORS middleware. A previous `CORS_ALLOW_ALL_ORIGINS` setting did nothing and has been removed.
 
+`NPM_BIN_PATH` is optional. Set it when `npm` is not on `PATH` (the old local settings file pointed at `C:\Program Files\nodejs\npm.cmd` on Windows).
+
+## Lending rules
+
+Interest defaults to 20%. The penalty is still a flat rate that staff type in. It is **not** applied when a loan becomes overdue, and a new loan starts at `penalty_rate` 0. That matches what the app actually saved before: migration `0002` changed the database column default to 40, but Django was inserting the model default of 0. The screens still say late payments incur 40%.
+
+Harrison: should `mark_overdue_loans` set `penalty_rate` to 40, or should new loans start at 40%? Until you say so, overdue only changes `status`.
+
+`issue_date` can be set on the add-loan form and defaults to today in Africa/Nairobi, so a loan can be backdated. A blank due date still becomes the end of the current month.
+
+`status` and `is_paid` are one fact stored in two columns (the archive snapshot and the existing screens read `is_paid`). `Loan.save()`, queryset `update()`, and `bulk_update()` force them to match. Migration `0004_sync_paid_status` corrected rows that had already drifted.
+
+Deleting a loan copies the loan and its payments onto the archive, then removes the live rows. The deleted-loans page is the same archive. A borrower who still has a live loan cannot be deleted (`ON DELETE RESTRICT`). After the loans are archived, the user can be deleted and the snapshot keeps the username.
+
 ## Scheduled commands
 
 Both commands live on the `loans` app, so `manage.py` discovers them.
@@ -102,7 +116,7 @@ sudo journalctl -u Alpha-Loans -n 50
 
 ## GitHub Actions
 
-`.github/workflows/ci.yml` runs on every push and pull request: PostgreSQL 16, dependencies, `makemigrations --check`, the test suite, and `ruff`.
+`.github/workflows/ci.yml` runs on every push and pull request: PostgreSQL 16, dependencies, `ruff`, `manage.py check`, `manage.py check --deploy --fail-level WARNING` (with `USE_HTTPS=true` and HSTS preload, which is stricter than the live HTTP site), `makemigrations --check`, and the test suite.
 
 `.github/workflows/deploy.yml` starts only after that CI workflow succeeds on `main`. It SSHes to the server and runs `deploy/deploy.sh`. If any required secret is missing, the deploy job logs that and **succeeds without deploying**.
 
