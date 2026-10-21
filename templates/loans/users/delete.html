@@ -1,0 +1,31 @@
+{% extends 'loans/base.html' %}
+{% block title %}Delete {{ account.username }} — Alpha Loans{% endblock %}
+{% block heading %}Delete user{% endblock %}
+{% block content %}
+<section class="card card-pad" style="max-width:640px;">
+    <h2>Delete {{ account.get_full_name|default:account.username }}?</h2>
+    <p class="lede">@{{ account.username }}. This cannot be undone. Archived loans keep the username even after the account is gone.</p>
+    {% if live_count %}
+    <div class="note-danger" role="alert">
+        <p>This person has {{ live_count }} live loan{{ live_count|pluralize }}. Deleting the account is blocked until those loans are archived.</p>
+    </div>
+    {% endif %}
+    <form method="post">
+        {% csrf_token %}
+        {% if live_count %}
+        <label class="check-row" style="margin:0.8rem 0;">
+            <input class="check" type="checkbox" name="archive_loans" value="yes">
+            <span>Archive their live loans, then delete the account</span>
+        </label>
+        {% endif %}
+        <div class="field">
+            <label for="confirm">Type <strong>{{ account.username }}</strong> to confirm</label>
+            <input class="input" id="confirm" name="confirm" autocomplete="off" required>
+        </div>
+        <div class="page-actions" style="margin-top:1rem;">
+            <button type="submit" class="btn btn-danger">Delete account</button>
+            <a class="btn btn-secondary" href="{% url 'user_detail' account.id %}">Cancel</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

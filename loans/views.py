@@ -21,13 +21,14 @@ from .forms import LoanForm, LoanUpdateForm, UserRegistrationForm
 from .lockout import clear_login_failures, login_is_locked, record_login_failure
 from .models import (
     ActivityLog,
-    DeletedLoan,
     Loan,
     Payment,
     loan_due_expression,
     sum_money,
 )
 from .pdf_export import generate_borrower_statement, generate_loans_excel
+from .reports import filter_activity, filtered_deleted
+from .roles import can_write_loans, reject_read_only
 from .utils import get_client_ip, log_activity, safe_redirect
 
 # SMS skipped — add later with: from .sms import send_payment_confirmation_sms
@@ -170,12 +171,31 @@ def dashboard(request):
         totals['overdue_count'],
     ]
 
+    collected = loans.aggregate(total_paid=sum_money('payments__amount'))['total_paid']
+    recent_loans = list(
+        loans.select_related('borrower').order_by('-created_at', '-pk')[:6]
+    )
+    recent_payments = list(
+        Payment.objects.filter(loan__in=loans)
+        .select_related('loan__borrower', 'recorded_by')
+        .order_by('-paid_at', '-pk')[:6]
+    )
+    borrower_count = None
+    if request.user.is_staff:
+        borrower_count = loans.values('borrower_id').distinct().count()
+
     context = {
         'total_loaned': totals['total_loaned'],
         'total_expected': totals['total_expected'],
+        'collected': collected,
+        'outstanding': totals['total_expected'] - collected,
         'active_loans': totals['active_loans'],
+        'active_status_count': totals['active_status_count'],
         'overdue_count': totals['overdue_count'],
         'paid_count': totals['paid_count'],
+        'borrower_count': borrower_count,
+        'recent_loans': recent_loans,
+        'recent_payments': recent_payments,
         'monthly_labels': json.dumps(monthly_labels),
         'monthly_amounts': json.dumps(monthly_amounts),
         'status_data': json.dumps(status_data),
@@ -226,6 +246,9 @@ def loan_list(request):
 @user_passes_test(is_staff)
 def manage_loans(request):
     if request.method == 'POST':
+        denied = reject_read_only(request, 'manage_loans')
+        if denied:
+            return denied
         form = LoanForm(request.POST)
         if form.is_valid():
             loan = form.save()
@@ -328,6 +351,10 @@ def _borrower_totals(borrower):
 def borrower_detail(request, user_id):
     borrower = get_object_or_404(User, id=user_id)
 
+    if request.method == 'POST' and not can_write_loans(request.user):
+        messages.error(request, 'Your role can view records but cannot change them.')
+        return redirect('borrower_detail', user_id=user_id)
+
     if request.method == 'POST':
         raw_ids = request.POST.getlist('loan_ids')
         reason = request.POST.get('reason', '').strip()
@@ -378,6 +405,9 @@ def borrower_detail(request, user_id):
 @user_passes_test(is_staff)
 @require_POST
 def record_payment(request, loan_id):
+    denied = reject_read_only(request, 'loan_list')
+    if denied:
+        return denied
     method = (request.POST.get('method') or 'cash').strip()
     reference = request.POST.get('reference', '').strip()
     note = request.POST.get('note', '').strip()
@@ -440,6 +470,9 @@ def record_payment(request, loan_id):
 def update_loan(request, loan_id):
     loan = get_object_or_404(Loan, id=loan_id)
     if request.method == 'POST':
+        denied = reject_read_only(request, 'manage_loans')
+        if denied:
+            return denied
         form = LoanUpdateForm(request.POST, instance=loan)
         if form.is_valid():
             form.save()
@@ -454,6 +487,9 @@ def update_loan(request, loan_id):
 @user_passes_test(is_staff)
 @require_POST
 def delete_loan(request, loan_id):
+    denied = reject_read_only(request, 'manage_loans')
+    if denied:
+        return denied
     with transaction.atomic():
         loan = get_object_or_404(
             lock_rows(Loan.objects.select_related('borrower')),
@@ -508,13 +544,8 @@ def export_loans_excel(request):
 @login_required
 @user_passes_test(is_staff)
 def deleted_loans_archive(request):
-    deleted = (
-        DeletedLoan.objects.select_related('borrower', 'deleted_by')
-        .annotate(payment_count=Count('payments'))
-    )
+    deleted = filtered_deleted(request.GET)
     q = request.GET.get('q', '').strip()
-    if q:
-        deleted = deleted.filter(borrower_username__icontains=q)
 
     paginator = Paginator(deleted, 25)
     deleted_page = paginator.get_page(request.GET.get('page', 1))
@@ -529,13 +560,11 @@ def deleted_loans_archive(request):
 @login_required
 @user_passes_test(is_staff)
 def activity_log(request):
-    logs = ActivityLog.objects.select_related('user').all()
+    logs = filter_activity(request.GET)
     action_filter = request.GET.get('action', '').strip()
     user_filter = request.GET.get('user', '').strip()
-    if action_filter:
-        logs = logs.filter(action=action_filter)
-    if user_filter:
-        logs = logs.filter(username__icontains=user_filter)
+    date_from = request.GET.get('date_from', '').strip()
+    date_to = request.GET.get('date_to', '').strip()
 
     all_logs = ActivityLog.objects.all()
     paginator = Paginator(logs, 50)
@@ -546,11 +575,17 @@ def activity_log(request):
         'action_choices': ActivityLog.ACTION_CHOICES,
         'action_filter': action_filter,
         'user_filter': user_filter,
+        'date_from': date_from,
+        'date_to': date_to,
         'total': logs.count(),
         'page_visit_count': all_logs.filter(action='page_visit').count(),
         'loan_action_count': all_logs.filter(action__in=[
             'loan_created', 'loan_updated', 'loan_deleted', 'loans_bulk_deleted'
         ]).count(),
         'login_count': all_logs.filter(action='login').count(),
+        'admin_action_count': all_logs.filter(action__in=[
+            'user_created', 'user_updated', 'user_deactivated', 'user_reactivated',
+            'user_deleted', 'password_changed', 'account_unlocked', 'profile_updated',
+        ]).count(),
     }
     return render(request, 'loans/activity_log.html', context)

@@ -32,7 +32,7 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Tailwind CSS is already built at `theme/static/css/dist/styles.css`. Rebuild it from `theme/static_src` with `npm ci && npm run build` when templates or `src/styles.css` change. `django-browser-reload` and `pytailwindcss` are dev-only; with `DEBUG=true` and the reload package installed, the dev server exposes `/__reload__/`.
+Tailwind CSS is already built at `theme/static/css/dist/styles.css`. Rebuild it from `theme/static_src` with `npm ci && npm run build` when templates or `src/styles.css` change, and commit the built file. `deploy/deploy.sh` rebuilds it when `npm` is installed and otherwise ships the committed CSS. Chart.js for the dashboard is vendored at `static/loans/chart.umd.min.js`, so the charts do not depend on a CDN. `django-browser-reload` and `pytailwindcss` are dev-only; with `DEBUG=true` and the reload package installed, the dev server exposes `/__reload__/`.
 
 ```bash
 python manage.py test
@@ -82,6 +82,33 @@ Harrison: should `mark_overdue_loans` set `penalty_rate` to 40, or should new lo
 
 Deleting a loan copies the loan and its payments onto the archive, then removes the live rows. The deleted-loans page is the same archive. A borrower who still has a live loan cannot be deleted (`ON DELETE RESTRICT`). After the loans are archived, the user can be deleted and the snapshot keeps the username.
 
+## People and roles
+
+User management lives in the app at **User management** (`/manage/users/`), not only in Django admin. It is limited to superusers and members of the **Admin** group. Every change is a POST with a CSRF token, and the action is written to the activity log (the password itself is not).
+
+| Role | Group | What they can do |
+| --- | --- | --- |
+| Admin | `Admin` | Everything a loan officer can do, plus create and edit users, set passwords, assign roles, deactivate, unlock, and delete |
+| Loan officer | `Loan Officer` | Issue and edit loans, record payments, open the archive and activity log |
+| Viewer | `Viewer` | Read the same staff pages and export CSV. Cannot change loans, payments, or users |
+| Borrower | none | Register, sign in, and see their own loans |
+
+The groups are created on migrate and carry the matching Django permissions (`auth.change_user` for admins, `loans.change_loan` for officers, view permissions for viewers). A staff account that existed before these groups still has write access on the loan book, and still cannot open user management.
+
+Safeguards:
+
+- An admin cannot deactivate, demote, or delete their own account.
+- The last superuser cannot be demoted, deactivated, or deleted. Only a superuser can change or delete another superuser.
+- Deleting a user who still has live loans is refused unless the admin confirms archival. Those loans are copied to the archive first, then the account is removed.
+- A generated temporary password is shown once in the flash message and is not stored in the activity log.
+- Unlock clears failed `LoginAttempt` rows for that username.
+
+Everyone who is signed in has **Profile** (`/account/`) to update their name and email and to change their password.
+
+CSV downloads sit next to the existing Excel and PDF exports: loans, payments, the archive, the activity log (respecting the current filters), and, for admins, the user directory. A cell that starts with `=`, `+`, `-`, or `@` is prefixed so a spreadsheet does not treat it as a formula.
+
+The activity log page filters by action, username, and date, and links through to the same CSV.
+
 ## Scheduled commands
 
 Both commands live on the `loans` app, so `manage.py` discovers them.
@@ -93,7 +120,7 @@ Both commands live on the `loans` app, so `manage.py` discovers them.
 
 `mark_overdue_loans` sets `status='overdue'` on active, unpaid loans whose due date is before today in Africa/Nairobi. A loan due today is left active. `--dry-run` prints the list and writes nothing.
 
-`purge_activity_logs` deletes `page_visit` rows older than the retention window. Logins, payments, and loan changes are kept. The request middleware also skips a repeated visit to the same path inside `ACTIVITY_LOG_DEDUPE_SECONDS`.
+`purge_activity_logs` deletes `page_visit` rows older than the retention window. Logins, payments, loan changes, and user-management actions are kept. The request middleware also skips a repeated visit to the same path inside `ACTIVITY_LOG_DEDUPE_SECONDS`.
 
 ## Manual update
 

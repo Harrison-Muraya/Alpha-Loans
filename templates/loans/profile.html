@@ -1,0 +1,45 @@
+{% extends 'loans/base.html' %}
+{% block title %}Profile — Alpha Loans{% endblock %}
+{% block heading %}Profile{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div>
+        <h2>{{ user.get_full_name|default:user.username }}</h2>
+        <p class="lede">@{{ user.username }} · {{ nav_role }}</p>
+    </div>
+</div>
+<div class="split">
+    <section class="card card-pad">
+        <h3 class="section-title">Your details</h3>
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="form" value="profile">
+            {% if profile_form.non_field_errors %}
+            <div class="form-errors" role="alert">{% for error in profile_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}</div>
+            {% endif %}
+            <div class="stack">
+                {% include 'loans/partials/field.html' with field=profile_form.first_name %}
+                {% include 'loans/partials/field.html' with field=profile_form.last_name %}
+                {% include 'loans/partials/field.html' with field=profile_form.email %}
+                <button type="submit" class="btn btn-primary">Save profile</button>
+            </div>
+        </form>
+    </section>
+    <section class="card card-pad">
+        <h3 class="section-title">Password</h3>
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="form" value="password">
+            {% if password_form.non_field_errors %}
+            <div class="form-errors" role="alert">{% for error in password_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}</div>
+            {% endif %}
+            <div class="stack">
+                {% include 'loans/partials/field.html' with field=password_form.old_password %}
+                {% include 'loans/partials/field.html' with field=password_form.new_password1 %}
+                {% include 'loans/partials/field.html' with field=password_form.new_password2 %}
+                <button type="submit" class="btn btn-secondary">Update password</button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}
