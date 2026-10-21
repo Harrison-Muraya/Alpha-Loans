@@ -1,6 +1,6 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from . import views
+from . import reports, user_admin, views
 
 
 urlpatterns = [
@@ -23,6 +23,25 @@ urlpatterns = [
     # Archive & activity
     path('manage/deleted/', views.deleted_loans_archive, name='deleted_loans_archive'),
     path('manage/activity/', views.activity_log, name='activity_log'),
+
+    # User management (admins and superusers)
+    path('manage/users/', user_admin.user_list, name='user_list'),
+    path('manage/users/new/', user_admin.user_create, name='user_create'),
+    path('manage/users/export/', user_admin.export_users_csv, name='export_users_csv'),
+    path('manage/users/<int:user_id>/', user_admin.user_detail, name='user_detail'),
+    path('manage/users/<int:user_id>/edit/', user_admin.user_edit, name='user_edit'),
+    path('manage/users/<int:user_id>/password/', user_admin.user_set_password, name='user_set_password'),
+    path('manage/users/<int:user_id>/deactivate/', user_admin.user_deactivate, name='user_deactivate'),
+    path('manage/users/<int:user_id>/reactivate/', user_admin.user_reactivate, name='user_reactivate'),
+    path('manage/users/<int:user_id>/unlock/', user_admin.user_unlock, name='user_unlock'),
+    path('manage/users/<int:user_id>/delete/', user_admin.user_delete, name='user_delete'),
+
+    path('account/', user_admin.profile, name='profile'),
+
+    path('export/loans/csv/', reports.export_loans_csv, name='export_loans_csv'),
+    path('export/payments/csv/', reports.export_payments_csv, name='export_payments_csv'),
+    path('manage/activity/export/', reports.export_activity_csv, name='export_activity_csv'),
+    path('manage/deleted/export/', reports.export_deleted_csv, name='export_deleted_csv'),
  
     # Password reset
     path('password-reset/', auth_views.PasswordResetView.as_view(

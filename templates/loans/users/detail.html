@@ -1,0 +1,123 @@
+{% extends 'loans/base.html' %}
+{% load loan_tags %}
+{% block title %}{{ account.username }} — Alpha Loans{% endblock %}
+{% block heading %}User{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div class="person">
+        <span class="avatar" aria-hidden="true">{{ account|initials }}</span>
+        <div>
+            <h2 style="margin:0;">{{ account.get_full_name|default:account.username }}</h2>
+            <p class="lede">@{{ account.username }}{% if account.email %} · {{ account.email }}{% endif %}</p>
+        </div>
+    </div>
+    <div class="page-actions">
+        <span class="badge badge-admin">{{ role_label }}</span>
+        {% if account.is_superuser %}<span class="badge">Superuser</span>{% endif %}
+        {% if account.is_active %}<span class="badge badge-paid">Active</span>{% else %}<span class="badge badge-overdue">Inactive</span>{% endif %}
+        {% if account.account_locked %}<span class="badge badge-warn">Locked · {{ account.recent_failures }} recent failures</span>{% endif %}
+        <a class="btn btn-secondary" href="{% url 'user_edit' account.id %}">Edit</a>
+        <a class="btn btn-secondary" href="{% url 'user_list' %}">All users</a>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <article class="stat"><p class="stat-label">Live loans</p><p class="stat-value">{{ stats.loan_count }}</p></article>
+    <article class="stat"><p class="stat-label">Open</p><p class="stat-value">{{ stats.open_loans }}</p></article>
+    <article class="stat"><p class="stat-label">Overdue</p><p class="stat-value danger">{{ stats.overdue_loans }}</p></article>
+    <article class="stat"><p class="stat-label">Paid loans</p><p class="stat-value ok">{{ stats.paid_loans }}</p></article>
+    <article class="stat"><p class="stat-label">Principal</p><p class="stat-value">KES {{ stats.total_loaned|floatformat:0 }}</p></article>
+    <article class="stat"><p class="stat-label">Expected</p><p class="stat-value">KES {{ stats.total_expected|floatformat:0 }}</p></article>
+    <article class="stat"><p class="stat-label">Collected</p><p class="stat-value ok">KES {{ stats.total_paid|floatformat:0 }}</p></article>
+    <article class="stat"><p class="stat-label">Payments recorded</p><p class="stat-value">{{ stats.payments_recorded }}</p></article>
+</div>
+<p class="sub" style="margin:0.7rem 0 1rem;">Joined {{ account.date_joined|date:"d M Y" }} · Last sign-in {{ account.last_login|date:"d M Y H:i"|default:"never" }} · {{ stats.activity_count }} activity row{{ stats.activity_count|pluralize }}</p>
+
+<div class="split">
+    <div class="stack">
+        <section class="card">
+            <div class="card-pad"><h3 class="section-title">Recent activity</h3></div>
+            {% if activity %}
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead><tr><th scope="col">When</th><th scope="col">Action</th><th scope="col">Detail</th></tr></thead>
+                    <tbody>
+                        {% for log in activity %}
+                        <tr>
+                            <td class="sub">{{ log.timestamp|date:"d M Y H:i" }}</td>
+                            <td>{{ log.get_action_display }}</td>
+                            <td>{{ log.detail|default:log.url|default:"—" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty"><h3>No activity yet</h3></div>
+            {% endif %}
+        </section>
+        <section class="card">
+            <div class="card-pad"><h3 class="section-title">Login attempts</h3></div>
+            {% if attempts %}
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead><tr><th scope="col">When</th><th scope="col">IP</th></tr></thead>
+                    <tbody>
+                        {% for attempt in attempts %}
+                        <tr>
+                            <td>{{ attempt.attempted_at|date:"d M Y H:i:s" }}</td>
+                            <td class="sub">{{ attempt.ip_address|default:"—" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty"><p>No failed sign-in attempts on file.</p></div>
+            {% endif %}
+        </section>
+    </div>
+    <div class="stack">
+        <section class="card card-pad">
+            <h3 class="section-title">Set password</h3>
+            <form method="post" action="{% url 'user_set_password' account.id %}">
+                {% csrf_token %}
+                <div class="stack">
+                    {% include 'loans/partials/field.html' with field=password_form.password %}
+                    {% include 'loans/partials/field.html' with field=password_form.confirm_password %}
+                    <label class="check-row">{{ password_form.generate }} <span>{{ password_form.generate.label }}</span></label>
+                    <button type="submit" class="btn btn-primary">Update password</button>
+                </div>
+            </form>
+            <p class="hint" style="margin-top:0.6rem;">A generated password is shown once on this page. It is not written to the activity log.</p>
+        </section>
+        {% if stats.loan_count %}
+        <a class="btn btn-secondary" href="{% url 'borrower_detail' account.id %}">Open loan statement</a>
+        {% endif %}
+        <section class="card card-pad danger-zone">
+            <h3 class="section-title">Account access</h3>
+            {% if account.account_locked %}
+            <form method="post" action="{% url 'user_unlock' account.id %}" onsubmit="return confirm('Clear the login lock for this username?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary">Unlock sign-in</button>
+            </form>
+            {% endif %}
+            {% if account.pk == user.pk %}
+            <p class="hint">You cannot deactivate or delete your own account, and the last superuser cannot be removed.</p>
+            {% elif account.is_active %}
+            <form method="post" action="{% url 'user_deactivate' account.id %}" style="margin-top:0.6rem;" onsubmit="return confirm('Deactivate this account? They will not be able to sign in.');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary">Deactivate</button>
+            </form>
+            <a class="btn btn-danger" style="margin-top:0.8rem;" href="{% url 'user_delete' account.id %}">Delete account</a>
+            {% else %}
+            <form method="post" action="{% url 'user_reactivate' account.id %}" style="margin-top:0.6rem;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Reactivate</button>
+            </form>
+            <a class="btn btn-danger" style="margin-top:0.8rem;" href="{% url 'user_delete' account.id %}">Delete account</a>
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}

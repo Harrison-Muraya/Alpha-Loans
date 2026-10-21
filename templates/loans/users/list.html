@@ -1,0 +1,88 @@
+{% extends 'loans/base.html' %}
+{% load loan_tags %}
+{% block title %}User management — Alpha Loans{% endblock %}
+{% block heading %}Users{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div>
+        <h2>User management</h2>
+        <p class="lede">{{ total }} account{{ total|pluralize }}. Admins can create staff, set roles, and unlock sign-in. You cannot remove yourself or the last superuser.</p>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-secondary" href="{% url 'export_users_csv' %}?{{ request.GET.urlencode }}">Export CSV</a>
+        <a class="btn btn-primary" href="{% url 'user_create' %}">New user</a>
+    </div>
+</div>
+<form class="filters" method="get" style="margin-bottom:1rem;">
+    <div class="field">
+        <label for="q">Search</label>
+        <input class="input" id="q" type="search" name="q" value="{{ q }}" placeholder="Name, username, or email">
+    </div>
+    <div class="field">
+        <label for="role">Role</label>
+        <select class="input" id="role" name="role">
+            <option value="">Any role</option>
+            <option value="admin" {% if role == 'admin' %}selected{% endif %}>Admin</option>
+            <option value="loan_officer" {% if role == 'loan_officer' %}selected{% endif %}>Loan officer</option>
+            <option value="viewer" {% if role == 'viewer' %}selected{% endif %}>Viewer</option>
+            <option value="borrower" {% if role == 'borrower' %}selected{% endif %}>Borrower</option>
+            <option value="staff" {% if role == 'staff' %}selected{% endif %}>Staff without a role</option>
+        </select>
+    </div>
+    <div class="field">
+        <label for="status">Status</label>
+        <select class="input" id="status" name="status">
+            <option value="">Anyone</option>
+            <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+            <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Deactivated</option>
+            <option value="locked" {% if status == 'locked' %}selected{% endif %}>Locked out</option>
+        </select>
+    </div>
+    <button class="btn btn-primary" type="submit">Filter</button>
+    {% if q or role or status %}<a class="btn btn-secondary" href="{% url 'user_list' %}">Clear</a>{% endif %}
+</form>
+<section class="card">
+    {% if users %}
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th scope="col">Person</th>
+                    <th scope="col">Role</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Loans</th>
+                    <th scope="col">Last sign-in</th>
+                    <th scope="col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for account in users %}
+                <tr>
+                    <td>
+                        <div class="person">
+                            <span class="avatar" aria-hidden="true">{{ account|initials }}</span>
+                            <div>
+                                <a href="{% url 'user_detail' account.id %}">{{ account.get_full_name|default:account.username }}</a>
+                                <div class="sub">@{{ account.username }}{% if account.email %} · {{ account.email }}{% endif %}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-admin">{{ account|role_name }}</span>{% if account.is_superuser %} <span class="badge">Superuser</span>{% endif %}</td>
+                    <td>
+                        {% if account.is_active %}<span class="badge badge-paid">Active</span>{% else %}<span class="badge badge-overdue">Inactive</span>{% endif %}
+                        {% if account.account_locked %}<span class="badge badge-warn">Locked</span>{% endif %}
+                    </td>
+                    <td>{{ account.loan_count }}</td>
+                    <td class="sub">{{ account.last_login|date:"d M Y H:i"|default:"Never" }}</td>
+                    <td><a class="btn btn-secondary btn-small" href="{% url 'user_detail' account.id %}">Open</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% include 'loans/partials/pagination.html' with page=users %}
+    {% else %}
+    <div class="empty"><h3>No accounts match</h3><p>Adjust the filters or create a user.</p></div>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,7 @@
+{% if loan.is_paid %}
+<span class="badge badge-paid">Paid</span>
+{% elif loan.status == 'overdue' %}
+<span class="badge badge-overdue">Overdue</span>
+{% else %}
+<span class="badge badge-active">Active</span>
+{% endif %}

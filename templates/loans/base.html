@@ -1,86 +1,156 @@
-{% load static %}
+{% load static loan_tags %}
 <!DOCTYPE html>
-<html lang="en" id="html-root">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,620;1,9..144,500&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}">
     <link rel="icon" type="image/svg+xml" href="{% static 'loans/images/favicon.svg' %}">
-    <title>{% block title %}Loan Management System{% endblock %}</title>
-    <style>
-      .dark body{background:#0f172a;color:#e2e8f0;}
-      .dark .bg-white{background:#1e293b!important;}
-      .dark .bg-gray-50{background:#0f172a!important;}
-      .dark .border-gray-200,.dark .border-b{border-color:#334155!important;}
-      .dark .text-gray-800,.dark .text-gray-900{color:#f1f5f9!important;}
-      .dark .text-gray-700{color:#cbd5e1!important;}
-      .dark .text-gray-600{color:#94a3b8!important;}
-      .dark .text-gray-500{color:#64748b!important;}
-      .dark .shadow,.dark .shadow-sm{box-shadow:0 1px 3px rgba(0,0,0,0.4)!important;}
-      .dark .hover\:bg-gray-100:hover,.dark .hover\:bg-gray-50:hover{background:#334155!important;}
-      .dark .divide-gray-200>*+*{border-color:#334155!important;}
-      .dark input,.dark select,.dark textarea{background:#0f172a!important;color:#e2e8f0!important;border-color:#334155!important;}
-      #dark-toggle{cursor:pointer;padding:6px;border-radius:8px;border:none;background:transparent;}
-    </style>
+    <title>{% block title %}Alpha Loans{% endblock %}</title>
+    <script>
+      (function () {
+        var theme = localStorage.getItem('theme');
+        var legacy = localStorage.getItem('darkMode') === '1';
+        if (theme === 'dark' || (theme === null && legacy)) document.documentElement.classList.add('dark');
+      })();
+    </script>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
     {% if user.is_authenticated %}
-    <div class="bg-white border-b border-gray-200 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <img src="{% static 'loans/images/logo-light.svg' %}" alt="Loan Manager" class="h-9 w-auto">
-                </div>
-                <div class="flex items-center gap-3">
-                    <button id="dark-toggle" title="Toggle dark mode" onclick="toggleDark()">
-                      <svg id="icon-moon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="text-gray-500"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
-                      <svg id="icon-sun" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none;" class="text-yellow-400"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                    </button>
-                    <div class="text-right">
-                        <p class="text-sm font-medium text-gray-900">{{ user.get_full_name|default:user.username }}</p>
-                        <p class="text-xs text-gray-500">{% if user.is_staff %}Admin{% endif %}</p>
-                    </div>
-                    <form method="post" action="{% url 'logout' %}" class="inline">
-                        {% csrf_token %}
-                        <button type="submit" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition">Logout</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="bg-white border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex gap-0 overflow-x-auto">
-                <a href="{% url 'dashboard' %}" class="py-4 px-4 border-b-2 whitespace-nowrap {% if request.resolver_match.url_name == 'dashboard' %}border-indigo-600 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %} font-medium text-sm transition">Dashboard</a>
-                <a href="{% url 'loan_list' %}" class="py-4 px-4 border-b-2 whitespace-nowrap {% if request.resolver_match.url_name == 'loan_list' %}border-indigo-600 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %} font-medium text-sm transition">Loans</a>
+    <div class="shell" id="shell">
+        <div class="sidebar-backdrop" data-close-sidebar></div>
+        <aside class="sidebar" id="sidebar">
+            <a class="brand" href="{% url 'dashboard' %}">
+                <img src="{% static 'loans/images/logo.svg' %}" alt="">
+                <span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;">Alpha Loans</span>
+            </a>
+            <p class="nav-label">Book</p>
+            <nav aria-label="Primary">
+                <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}is-active{% endif %}" href="{% url 'dashboard' %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"/></svg>
+                    Dashboard
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'loan_list' %}is-active{% endif %}" href="{% url 'loan_list' %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+                    Loans
+                </a>
                 {% if user.is_staff %}
-                <a href="{% url 'manage_loans' %}" class="py-4 px-4 border-b-2 whitespace-nowrap {% if request.resolver_match.url_name == 'manage_loans' %}border-indigo-600 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %} font-medium text-sm transition">Manage</a>
-                <a href="{% url 'borrower_summary' %}" class="py-4 px-4 border-b-2 whitespace-nowrap {% if request.resolver_match.url_name in 'borrower_summary,borrower_detail' %}border-indigo-600 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %} font-medium text-sm transition">Users</a>
-                <a href="{% url 'deleted_loans_archive' %}" class="py-4 px-4 border-b-2 whitespace-nowrap {% if request.resolver_match.url_name == 'deleted_loans_archive' %}border-indigo-600 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %} font-medium text-sm transition">Archive</a>
-                <a href="{% url 'activity_log' %}" class="py-4 px-4 border-b-2 whitespace-nowrap {% if request.resolver_match.url_name == 'activity_log' %}border-indigo-600 text-indigo-600{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %} font-medium text-sm transition">Activity</a>
-                <a href="{% url 'export_loans_excel' %}" class="py-4 px-4 border-b-2 whitespace-nowrap border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm transition">
-                  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:inline;vertical-align:-2px;margin-right:3px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Export
+                <a class="nav-link {% if request.resolver_match.url_name == 'manage_loans' %}is-active{% endif %}" href="{% url 'manage_loans' %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
+                    Manage
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'borrower_summary' or request.resolver_match.url_name == 'borrower_detail' %}is-active{% endif %}" href="{% url 'borrower_summary' %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1"/><circle cx="9.5" cy="7.5" r="3"/><path d="M20 8v6M17 11h6"/></svg>
+                    Borrowers
                 </a>
                 {% endif %}
+                {% if can_manage_users %}
+                <p class="nav-label">Administration</p>
+                <a class="nav-link {% if 'user_' in request.resolver_match.url_name %}is-active{% endif %}" href="{% url 'user_list' %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4z"/><path d="M4 20a8 8 0 0 1 16 0"/></svg>
+                    User management
+                </a>
+                {% endif %}
+                {% if user.is_staff %}
+                <a class="nav-link {% if request.resolver_match.url_name == 'deleted_loans_archive' %}is-active{% endif %}" href="{% url 'deleted_loans_archive' %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V5h6v2M7 7l1 13h8l1-13"/></svg>
+                    Archive
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'activity_log' %}is-active{% endif %}" href="{% url 'activity_log' %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 8v5l3 2"/><circle cx="12" cy="12" r="8"/></svg>
+                    Activity
+                </a>
+                {% endif %}
+                <a class="nav-link {% if request.resolver_match.url_name == 'profile' %}is-active{% endif %}" href="{% url 'profile' %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3"/><path d="M5 19a7 7 0 0 1 14 0"/></svg>
+                    Profile
+                </a>
+            </nav>
+            <div class="sidebar-foot">
+                <div class="who">
+                    <span class="avatar" aria-hidden="true">{{ user|initials }}</span>
+                    <div>
+                        <p class="name">{{ user.get_full_name|default:user.username }}</p>
+                        <p class="role">{{ nav_role }}</p>
+                    </div>
+                </div>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="logout-btn">Sign out</button>
+                </form>
             </div>
+        </aside>
+        <div class="workspace">
+            <header class="topbar">
+                <button type="button" class="menu-btn" data-open-sidebar aria-controls="sidebar" aria-expanded="false">
+                    <span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;">Open menu</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+                </button>
+                <h1>{% block heading %}Alpha Loans{% endblock %}</h1>
+                <div class="topbar-spacer"></div>
+                <button type="button" class="icon-btn" id="theme-toggle" aria-pressed="false" title="Toggle colour theme">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"/></svg>
+                    <span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;">Toggle colour theme</span>
+                </button>
+            </header>
+            {% include 'loans/partials/toasts.html' %}
+            <main id="main" class="content">
+    {% else %}
+    <main id="main" class="auth-screen">
+        <div class="auth-stack">
+            {% include 'loans/partials/toasts.html' %}
+    {% endif %}
+            {% block content %}{% endblock %}
+    {% if user.is_authenticated %}
+            </main>
         </div>
     </div>
-    {% if messages %}
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-        {% for message in messages %}
-        <div class="{% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-800{% else %}bg-green-50 border-green-200 text-green-800{% endif %} border rounded-lg p-4 mb-4">{{ message }}</div>
-        {% endfor %}
-    </div>
+    {% else %}
+        </div>
+    </main>
     {% endif %}
-    {% endif %}
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {% block content %}{% endblock %}
-    </div>
     <script>
-      const root=document.getElementById('html-root');
-      function applyDark(d){root.classList.toggle('dark',d);document.getElementById('icon-moon').style.display=d?'none':'block';document.getElementById('icon-sun').style.display=d?'block':'none';}
-      function toggleDark(){const n=!root.classList.contains('dark');localStorage.setItem('darkMode',n?'1':'0');applyDark(n);}
-      applyDark(localStorage.getItem('darkMode')==='1');
+      (function () {
+        var root = document.documentElement;
+        var shell = document.getElementById('shell');
+        var opener = document.querySelector('[data-open-sidebar]');
+        function applyTheme(dark) {
+          root.classList.toggle('dark', dark);
+          var toggle = document.getElementById('theme-toggle');
+          if (toggle) toggle.setAttribute('aria-pressed', dark ? 'true' : 'false');
+        }
+        var toggle = document.getElementById('theme-toggle');
+        if (toggle) {
+          applyTheme(root.classList.contains('dark'));
+          toggle.addEventListener('click', function () {
+            var dark = !root.classList.contains('dark');
+            localStorage.setItem('theme', dark ? 'dark' : 'light');
+            applyTheme(dark);
+          });
+        }
+        if (opener && shell) {
+          opener.addEventListener('click', function () {
+            var open = shell.classList.toggle('sidebar-open');
+            opener.setAttribute('aria-expanded', open ? 'true' : 'false');
+          });
+          var backdrop = document.querySelector('[data-close-sidebar]');
+          if (backdrop) backdrop.addEventListener('click', function () {
+            shell.classList.remove('sidebar-open');
+            opener.setAttribute('aria-expanded', 'false');
+          });
+        }
+        document.addEventListener('submit', function (event) {
+          var button = event.submitter;
+          if (button && button.type === 'submit' && !button.dataset.keepEnabled) {
+            button.setAttribute('aria-busy', 'true');
+          }
+        });
+      })();
     </script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

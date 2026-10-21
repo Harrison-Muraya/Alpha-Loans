@@ -1,68 +1,147 @@
 {% extends 'loans/base.html' %}
-{% block title %}Dashboard — Loan Manager{% endblock %}
+{% load static %}
+{% block title %}Dashboard — Alpha Loans{% endblock %}
+{% block heading %}Dashboard{% endblock %}
 {% block content %}
-<div class="space-y-6">
-  <h2 class="text-2xl font-bold text-gray-800">Overview</h2>
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-    <div class="bg-white rounded-xl shadow p-5">
-      <p class="text-xs text-gray-500 uppercase tracking-wide mb-2">Total Loaned</p>
-      <p class="text-2xl font-bold text-gray-800">KES {{ total_loaned|floatformat:0 }}</p>
-    </div>
-    <div class="bg-white rounded-xl shadow p-5">
-      <p class="text-xs text-gray-500 uppercase tracking-wide mb-2">Expected Return</p>
-      <p class="text-2xl font-bold text-green-600">KES {{ total_expected|floatformat:0 }}</p>
-    </div>
-    <div class="bg-white rounded-xl shadow p-5">
-      <p class="text-xs text-gray-500 uppercase tracking-wide mb-2">Active Loans</p>
-      <p class="text-2xl font-bold text-indigo-600">{{ active_loans }}</p>
-    </div>
-    <div class="bg-white rounded-xl shadow p-5">
-      <p class="text-xs text-gray-500 uppercase tracking-wide mb-2">Overdue</p>
-      <p class="text-2xl font-bold text-red-500">{{ overdue_count }}</p>
-    </div>
-  </div>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="md:col-span-2 bg-white rounded-xl shadow p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="font-semibold text-gray-700">Monthly Lending</h3>
-        <span class="text-xs text-gray-400">Last 6 months</span>
-      </div>
-      <canvas id="monthlyChart" height="100"></canvas>
-    </div>
-    <div class="bg-white rounded-xl shadow p-6">
-      <h3 class="font-semibold text-gray-700 mb-4">Loan Status</h3>
-      <canvas id="statusChart" height="160"></canvas>
-      <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;flex-wrap:wrap;">
-        <span style="font-size:12px;color:#6b7280;display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#16a34a;display:inline-block;"></span>Paid ({{ paid_count }})</span>
-        <span style="font-size:12px;color:#6b7280;display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#2D5BE3;display:inline-block;"></span>Active ({{ active_loans }})</span>
-        <span style="font-size:12px;color:#6b7280;display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#dc2626;display:inline-block;"></span>Overdue ({{ overdue_count }})</span>
-      </div>
-    </div>
-  </div>
-  <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
-    <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-    </svg>
+<div class="page-head">
     <div>
-      <h4 class="font-medium text-blue-900 mb-1">Loan Terms</h4>
-      <p class="text-sm text-blue-800">Standard interest rate: 20% per loan period · Late payment penalty: 40%</p>
+        <h2>Overview</h2>
+        <p class="lede">{% if user.is_staff %}The book, at a glance.{% else %}Your loans and what is still due.{% endif %}</p>
     </div>
-  </div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<div class="stat-grid">
+    <article class="stat">
+        <p class="stat-label">Total loaned</p>
+        <p class="stat-value">KES {{ total_loaned|floatformat:0 }}</p>
+    </article>
+    <article class="stat">
+        <p class="stat-label">Expected return</p>
+        <p class="stat-value ok">KES {{ total_expected|floatformat:0 }}</p>
+    </article>
+    <article class="stat">
+        <p class="stat-label">Collected</p>
+        <p class="stat-value accent">KES {{ collected|floatformat:0 }}</p>
+    </article>
+    <article class="stat">
+        <p class="stat-label">Outstanding</p>
+        <p class="stat-value {% if outstanding > 0 %}warn{% endif %}">KES {{ outstanding|floatformat:0 }}</p>
+    </article>
+    <article class="stat">
+        <p class="stat-label">Open loans</p>
+        <p class="stat-value">{{ active_loans }}</p>
+    </article>
+    <article class="stat">
+        <p class="stat-label">Overdue</p>
+        <p class="stat-value danger">{{ overdue_count }}</p>
+    </article>
+    <article class="stat">
+        <p class="stat-label">Paid</p>
+        <p class="stat-value ok">{{ paid_count }}</p>
+    </article>
+    {% if user.is_staff %}
+    <article class="stat">
+        <p class="stat-label">Borrowers</p>
+        <p class="stat-value">{{ borrower_count }}</p>
+    </article>
+    {% endif %}
+</div>
+
+<div class="chart-grid" style="margin-top:1rem;">
+    <section class="card card-pad">
+        <div class="page-head" style="margin-bottom:0.6rem;">
+            <h3 class="section-title">Monthly lending</h3>
+            <span class="sub">Last 6 months</span>
+        </div>
+        <canvas id="monthlyChart" height="110" aria-label="Monthly lending chart" role="img"></canvas>
+    </section>
+    <section class="card card-pad">
+        <h3 class="section-title">Loan status</h3>
+        <canvas id="statusChart" height="170" aria-label="Loan status chart" role="img"></canvas>
+        <div class="page-actions" style="justify-content:center;margin-top:0.8rem;">
+            <span class="badge badge-paid">Paid {{ paid_count }}</span>
+            <span class="badge badge-info">Active {{ active_status_count }}</span>
+            <span class="badge badge-overdue">Overdue {{ overdue_count }}</span>
+        </div>
+    </section>
+</div>
+
+<div class="split" style="margin-top:1rem;">
+    <section class="card">
+        <div class="card-pad"><h3 class="section-title">Recent loans</h3></div>
+        {% if recent_loans %}
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        {% if user.is_staff %}<th scope="col">Borrower</th>{% endif %}
+                        <th scope="col">Amount</th>
+                        <th scope="col">Due</th>
+                        <th scope="col">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for loan in recent_loans %}
+                    <tr>
+                        {% if user.is_staff %}<td>{{ loan.borrower.get_full_name|default:loan.borrower.username }}</td>{% endif %}
+                        <td class="num">KES {{ loan.amount|floatformat:2 }}</td>
+                        <td>{{ loan.due_date }}</td>
+                        <td>{% include 'loans/partials/loan_status.html' %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty"><h3>No loans yet</h3><p>New loans will show up here.</p></div>
+        {% endif %}
+    </section>
+    <section class="card">
+        <div class="card-pad"><h3 class="section-title">Recent payments</h3></div>
+        {% if recent_payments %}
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th scope="col">Amount</th><th scope="col">When</th></tr></thead>
+                <tbody>
+                    {% for payment in recent_payments %}
+                    <tr>
+                        <td>
+                            <strong class="num">KES {{ payment.amount|floatformat:2 }}</strong>
+                            <div class="sub">{{ payment.get_method_display }}{% if user.is_staff %} · {{ payment.loan.borrower.username }}{% endif %}</div>
+                        </td>
+                        <td class="sub">{{ payment.paid_at|date:"d M Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty"><h3>No payments yet</h3><p>Recorded payments will be listed here.</p></div>
+        {% endif %}
+    </section>
+</div>
+
+<p class="note" style="margin-top:1rem;">Standard interest is 20% for the loan period. A late-payment penalty is a flat rate staff enter on the loan. It is not applied automatically when a loan becomes overdue.</p>
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'loans/chart.umd.min.js' %}"></script>
 <script>
-const monthlyLabels  = {{ monthly_labels|safe }};
-const monthlyAmounts = {{ monthly_amounts|safe }};
-const statusData     = {{ status_data|safe }};
-new Chart(document.getElementById('monthlyChart'), {
-  type: 'bar',
-  data: { labels: monthlyLabels, datasets: [{ label: 'KES Lent', data: monthlyAmounts, backgroundColor: 'rgba(45,91,227,0.15)', borderColor: '#2D5BE3', borderWidth: 2, borderRadius: 6 }] },
-  options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { callback: v => 'KES ' + v.toLocaleString(), font: { size: 11 } } }, x: { grid: { display: false }, ticks: { font: { size: 11 } } } } }
-});
-new Chart(document.getElementById('statusChart'), {
-  type: 'doughnut',
-  data: { labels: ['Paid','Active','Overdue'], datasets: [{ data: statusData, backgroundColor: ['#16a34a','#2D5BE3','#dc2626'], borderWidth: 0, hoverOffset: 6 }] },
-  options: { responsive: true, cutout: '70%', plugins: { legend: { display: false } } }
-});
+(function () {
+  if (typeof Chart === 'undefined') return;
+  var monthlyLabels = {{ monthly_labels|safe }};
+  var monthlyAmounts = {{ monthly_amounts|safe }};
+  var statusData = {{ status_data|safe }};
+  var ink = getComputedStyle(document.body).color;
+  var grid = getComputedStyle(document.documentElement).getPropertyValue('--line');
+  new Chart(document.getElementById('monthlyChart'), {
+    type: 'bar',
+    data: { labels: monthlyLabels, datasets: [{ label: 'KES lent', data: monthlyAmounts, backgroundColor: 'rgba(27,77,56,0.2)', borderColor: '#1b4d38', borderWidth: 1.5, borderRadius: 8 }] },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: grid }, ticks: { color: ink, callback: function (v) { return 'KES ' + v.toLocaleString(); } } }, x: { grid: { display: false }, ticks: { color: ink } } } }
+  });
+  new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: { labels: ['Paid', 'Active', 'Overdue'], datasets: [{ data: statusData, backgroundColor: ['#1d6b45', '#1b4d38', '#8d2c2c'], borderWidth: 0, hoverOffset: 4 }] },
+    options: { responsive: true, cutout: '68%', plugins: { legend: { display: false } } }
+  });
+})();
 </script>
 {% endblock %}
