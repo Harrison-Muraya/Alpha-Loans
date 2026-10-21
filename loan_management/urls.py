@@ -23,8 +23,7 @@ urlpatterns = [
     path('', include('loans.urls')),
 ]
 
-if settings.DEBUG:
-    # Include django_browser_reload URLs only in DEBUG mode
+if 'django_browser_reload' in settings.INSTALLED_APPS:
     urlpatterns += [
         path("__reload__/", include("django_browser_reload.urls")),
     ]

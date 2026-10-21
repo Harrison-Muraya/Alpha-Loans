@@ -10,35 +10,39 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import sys
 from pathlib import Path
+
 import environ
-import os
+
+from loan_management.security import production_security_settings
 
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Initialize environment variables
 env = environ.Env(
     DEBUG=(bool, False)
 )
-environ.Env.read_env(os.path.join(Path(__file__).resolve().parent.parent, '.env'))
+environ.Env.read_env(BASE_DIR / '.env')
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
 DEBUG = env('DEBUG')
 
-# ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
-ALLOWED_HOSTS = ['*']
+# Hosts that already serve this app. Override with ALLOWED_HOSTS in the environment.
+# Do not default to '*' — set the variable explicitly if a wildcard is really required.
+DEFAULT_ALLOWED_HOSTS = [
+    '197.248.201.233',
+    '192.168.100.26',
+    'localhost',
+    '127.0.0.1',
+]
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=DEFAULT_ALLOWED_HOSTS)
 
+# The test client uses this host. It is not a production host.
+if 'test' in sys.argv and 'testserver' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS = [*ALLOWED_HOSTS, 'testserver']
 
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -52,11 +56,7 @@ INSTALLED_APPS = [
     'theme',
 ]
 
-# Tailwind CSS Configuration
 TAILWIND_APP_NAME = 'theme'
-
-# if DEBUG:
-#     NPM_BIN_PATH = r"C:\Program Files\nodejs\npm.cmd"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -69,6 +69,16 @@ MIDDLEWARE = [
     'loans.middleware.ActivityLogMiddleware',
 ]
 
+# Optional dev reload. Absent from production requirements, so a missing package
+# must not prevent the project from starting.
+if DEBUG:
+    try:
+        import django_browser_reload  # noqa: F401
+    except ImportError:
+        django_browser_reload = None
+    else:
+        INSTALLED_APPS.append('django_browser_reload')
+        MIDDLEWARE.append('django_browser_reload.middleware.BrowserReloadMiddleware')
 
 
 ROOT_URLCONF = 'loan_management.urls'
@@ -76,7 +86,7 @@ ROOT_URLCONF = 'loan_management.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'], 
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -91,16 +101,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'loan_management.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -112,7 +112,6 @@ DATABASES = {
     }
 }
 
-# Mail settings for password reset
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = env('EMAIL_PORT', default=587, cast=int)
@@ -122,59 +121,75 @@ EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env('EMAIL_HOST_USER', default='')
 
 
-
-# Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+if 'test' in sys.argv:
+    PASSWORD_HASHERS = [
+        'django.contrib.auth.hashers.MD5PasswordHasher',
+    ]
 
-# Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Africa/Nairobi'
 
 USE_I18N = True
 
 USE_TZ = True
 
-CORS_ALLOW_ALL_ORIGINS = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
-
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 STATIC_URL = 'static/'
 
 STATICFILES_DIRS = [
-    BASE_DIR / "theme" / "static",
-    BASE_DIR / "static",
+    BASE_DIR / 'theme' / 'static',
+    BASE_DIR / 'static',
 ]
 
-CSRF_TRUSTED_ORIGINS = [
-    'http://197.248.201.233:9000',
-    'https://197.248.201.233:9000',
-    'http://192.168.100.26:8000',
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-]
+CSRF_TRUSTED_ORIGINS = env.list(
+    'CSRF_TRUSTED_ORIGINS',
+    default=[
+        'http://197.248.201.233:9000',
+        'https://197.248.201.233:9000',
+        'http://192.168.100.26:8000',
+        'http://127.0.0.1:8000',
+        'http://localhost:8000',
+    ],
+)
+
+# Reverse proxies allowed to supply X-Forwarded-For. Loopback covers nginx on
+# the same machine. Leave this unset for direct connections — clients cannot
+# spoof their address by sending the header themselves.
+TRUSTED_PROXY_IPS = env.list('TRUSTED_PROXY_IPS', default=['127.0.0.1', '::1'])
+
+LOGIN_FAILURE_LIMIT = env.int('LOGIN_FAILURE_LIMIT', default=5)
+LOGIN_IP_FAILURE_LIMIT = env.int('LOGIN_IP_FAILURE_LIMIT', default=50)
+LOGIN_LOCKOUT_SECONDS = env.int('LOGIN_LOCKOUT_SECONDS', default=900)
+
+# Skip a repeated page-visit row for the same user and path inside this window.
+# Set to 0 to log every GET. purge_activity_logs removes old page-visit rows.
+ACTIVITY_LOG_DEDUPE_SECONDS = env.int('ACTIVITY_LOG_DEDUPE_SECONDS', default=900)
+ACTIVITY_LOG_RETENTION_DAYS = env.int('ACTIVITY_LOG_RETENTION_DAYS', default=30)
+
+USE_HTTPS = env.bool('USE_HTTPS', default=False)
+for _key, _value in production_security_settings(
+    debug=DEBUG,
+    use_https=USE_HTTPS,
+    hsts_seconds=env.int('SECURE_HSTS_SECONDS', default=31536000),
+    hsts_include_subdomains=env.bool('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=True),
+    hsts_preload=env.bool('SECURE_HSTS_PRELOAD', default=False),
+    ssl_redirect=env.bool('SECURE_SSL_REDIRECT', default=True),
+).items():
+    globals()[_key] = _value
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

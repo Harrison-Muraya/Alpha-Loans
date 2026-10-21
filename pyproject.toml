@@ -1,0 +1,6 @@
+[tool.ruff]
+line-length = 100
+extend-exclude = ["migrations", "theme/static_src", "staticfiles"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]

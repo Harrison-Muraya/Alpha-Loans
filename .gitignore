@@ -1,7 +1,6 @@
 .venv
 db.sqlite3
 db.sqlite3-journal
-settings.py
 __pycache__/
 *.log
 media/
@@ -17,8 +16,6 @@ coverage/htmlcov/
 coverage/.cache 
 *.coverage
 pytest_cache/
-migrations/
-*/migrations/
 *.egg-info/
 dist/
 build/

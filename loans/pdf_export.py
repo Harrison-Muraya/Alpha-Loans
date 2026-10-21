@@ -11,8 +11,13 @@ WeasyPrint on Windows:
     Follow https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows
 """
 from io import BytesIO
+
+import openpyxl
 from django.template.loader import render_to_string
 from django.utils import timezone
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
+from weasyprint import HTML
 
 
 # ── PDF via WeasyPrint ────────────────────────────────────────────────────────
@@ -22,20 +27,12 @@ def generate_borrower_statement(borrower, loans) -> bytes:
     Render the loans/pdf_statement.html template and convert to PDF.
     Returns PDF bytes.
     """
-    try:
-        from weasyprint import HTML, CSS
-    except ImportError:
-        raise ImportError(
-            "WeasyPrint is not installed. Run: pip install weasyprint\n"
-            "On Linux also run: sudo apt install libpango-1.0-0 libpangoft2-1.0-0 libcairo2"
-        )
-
     # Build context
     loans_list = list(loans)
-    total_loaned   = sum(l.amount           for l in loans_list)
-    total_due      = sum(l.total_amount_due() for l in loans_list)
-    total_paid_amt = sum(l.total_paid()      for l in loans_list)
-    total_balance  = sum(l.balance_remaining() for l in loans_list)
+    total_loaned = sum(loan.amount for loan in loans_list)
+    total_due = sum(loan.total_amount_due() for loan in loans_list)
+    total_paid_amt = sum(loan.total_paid() for loan in loans_list)
+    total_balance = sum(loan.balance_remaining() for loan in loans_list)
 
     context = {
         'borrower':      borrower,
@@ -59,19 +56,11 @@ def generate_loans_excel(loans) -> bytes:
     Generate an Excel workbook with Loans + Payments sheets.
     Returns .xlsx bytes.
     """
-    try:
-        import openpyxl
-        from openpyxl.styles import Font, PatternFill, Alignment
-        from openpyxl.utils import get_column_letter
-    except ImportError:
-        raise ImportError("openpyxl not installed. Run: pip install openpyxl")
-
     wb = openpyxl.Workbook()
 
     BLUE_FILL  = PatternFill('solid', fgColor='2D5BE3')
     ALT_FILL   = PatternFill('solid', fgColor='F0EDE8')
     HDR_FONT   = Font(color='FFFFFF', bold=True, size=10)
-    BOLD_FONT  = Font(bold=True)
     CENTER     = Alignment(horizontal='center')
 
     def style_header_row(ws, headers):
