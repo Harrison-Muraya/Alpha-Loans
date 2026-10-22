@@ -81,9 +81,15 @@ jobs:
         run: |
           URL="${HEALTHCHECK_URL:-http://${SSH_HOST}:9000/healthz/}"
           echo "Probing $URL"
-          for i in $(seq 1 12); do
-            if curl -fsS --max-time 10 "$URL"; then echo; echo "Healthy after attempt $i"; exit 0; fi
-            echo "Not healthy yet (attempt $i/12), retrying in 10s…"; sleep 10
+          for i in $(seq 1 18); do
+            code=$(curl -sS -o /tmp/health.body -w "%{http_code}" --max-time 10 "$URL" || true)
+            if [ "$code" = "200" ]; then
+              cat /tmp/health.body; echo; echo "Healthy after attempt $i"
+              exit 0
+            fi
+            echo "Not healthy yet (attempt $i/18, http=$code), retrying in 5s…"
+            head -c 200 /tmp/health.body 2>/dev/null || true; echo
+            sleep 5
           done
           echo "::error::Production health check failed: $URL"
           exit 1

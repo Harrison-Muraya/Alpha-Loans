@@ -13,6 +13,7 @@ SKIP_PATHS = (
     '/favicon',
     '/__reload__/',
     '/admin/jsi18n/',
+    '/healthz/',
 )
 
 

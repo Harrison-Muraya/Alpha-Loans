@@ -29,6 +29,94 @@ retry() {
   done
 }
 
+# Probe /healthz/ without depending on nginx or a system curl binary.
+# Prefer the gunicorn unix socket (what the README documents), then HTTP.
+# Fall back to Python urllib so a missing `curl` cannot false-fail a deploy.
+probe_health() {
+  local path="${1:-/healthz/}"
+  local socket="${GUNICORN_SOCKET:-/run/alpha-loans.sock}"
+  local http_url="${HEALTHCHECK_URL:-http://127.0.0.1:9000${path}}"
+  local code=""
+
+  if [ -S "$socket" ] && command -v curl >/dev/null 2>&1; then
+    code=$(curl -sS -o /tmp/alpha-loans-health.body -w "%{http_code}" --max-time 5 \
+      --unix-socket "$socket" "http://localhost${path}" 2>/tmp/alpha-loans-health.err || true)
+    if [ "$code" = "200" ]; then
+      echo "Health check OK (unix://${socket}${path})"
+      return 0
+    fi
+  fi
+
+  if command -v curl >/dev/null 2>&1; then
+    code=$(curl -sS -o /tmp/alpha-loans-health.body -w "%{http_code}" --max-time 5 \
+      "$http_url" 2>/tmp/alpha-loans-health.err || true)
+    if [ "$code" = "200" ]; then
+      echo "Health check OK ($http_url)"
+      return 0
+    fi
+  fi
+
+  # Python fallback — always available inside the activated venv.
+  if python - "$path" "$socket" "$http_url" <<'PY'
+import socket, sys, urllib.error, urllib.request
+
+path, unix_sock, http_url = sys.argv[1], sys.argv[2], sys.argv[3]
+
+class UnixHTTPConnection:
+    def __init__(self, sock_path):
+        self.sock_path = sock_path
+    def request(self):
+        payload = (
+            f"GET {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"
+        ).encode()
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        s.settimeout(5)
+        try:
+            s.connect(self.sock_path)
+            s.sendall(payload)
+            data = b""
+            while True:
+                chunk = s.recv(4096)
+                if not chunk:
+                    break
+                data += chunk
+        finally:
+            s.close()
+        status = data.split(b"\r\n", 1)[0].decode("latin1", "replace")
+        return " 200 " in f" {status} "
+
+ok = False
+try:
+    if unix_sock:
+        try:
+            ok = UnixHTTPConnection(unix_sock).request()
+        except OSError as exc:
+            print(f"socket probe failed: {exc}", file=sys.stderr)
+    if not ok:
+        with urllib.request.urlopen(http_url, timeout=5) as resp:
+            ok = resp.status == 200
+except Exception as exc:  # noqa: BLE001
+    print(f"http probe failed: {exc}", file=sys.stderr)
+    ok = False
+sys.exit(0 if ok else 1)
+PY
+  then
+    echo "Health check OK (python probe)"
+    return 0
+  fi
+
+  echo "Last health HTTP status: ${code:-n/a}" >&2
+  if [ -f /tmp/alpha-loans-health.err ]; then
+    sed 's/^/curl: /' /tmp/alpha-loans-health.err >&2 || true
+  fi
+  if [ -f /tmp/alpha-loans-health.body ]; then
+    echo "Body (first 200 bytes):" >&2
+    head -c 200 /tmp/alpha-loans-health.body >&2 || true
+    echo >&2
+  fi
+  return 1
+}
+
 DEPLOY_PATH="${DEPLOY_PATH:-/var/www/Alpha-Loans}"
 cd "$DEPLOY_PATH"
 
@@ -75,15 +163,30 @@ fi
 python manage.py collectstatic --noinput
 retry "migrate" python manage.py migrate --noinput
 sudo systemctl restart Alpha-Loans
-sudo systemctl --no-pager --full status Alpha-Loans
+# Give workers a moment to bind the socket before the first probe.
+sleep 3
+sudo systemctl --no-pager --full status Alpha-Loans || true
 
-# Post-deploy health gate: /healthz/ must answer 200 (DB reachable).
-HEALTH_URL="${HEALTHCHECK_URL:-http://127.0.0.1:9000/healthz/}"
 healthy=0
-for i in $(seq 1 12); do
-  if curl -fsS --max-time 10 "$HEALTH_URL" >/dev/null 2>&1; then healthy=1; echo "Health check OK ($HEALTH_URL)"; break; fi
-  echo "Waiting for health (attempt $i/12)…"; sleep 5
+for i in $(seq 1 18); do
+  if probe_health /healthz/; then healthy=1; break; fi
+  echo "Waiting for health (attempt $i/18)…"
+  # Surface crash-loops early so the next failure log is useful.
+  if ! systemctl is-active --quiet Alpha-Loans; then
+    echo "Alpha-Loans.service is not active:" >&2
+    sudo systemctl --no-pager --full status Alpha-Loans >&2 || true
+    sudo journalctl -u Alpha-Loans -n 60 --no-pager >&2 || true
+    break
+  fi
+  sleep 5
 done
-[ "$healthy" -eq 1 ] || { echo "Health check failed: $HEALTH_URL" >&2; false; }
+
+if [ "$healthy" -ne 1 ]; then
+  echo "Health check failed after deploy." >&2
+  sudo systemctl --no-pager --full status Alpha-Loans >&2 || true
+  sudo journalctl -u Alpha-Loans -n 80 --no-pager >&2 || true
+  false
+fi
+
 trap - ERR
 echo "Deploy OK: $(git rev-parse --short HEAD) (was ${PREV_COMMIT:0:7})"

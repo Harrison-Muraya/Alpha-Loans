@@ -30,6 +30,9 @@ def production_security_settings(
     if use_https:
         configured.update({
             'SECURE_SSL_REDIRECT': ssl_redirect,
+            # Keep liveness probes on plain HTTP (unix socket / localhost)
+            # working even when the public site forces HTTPS.
+            'SECURE_REDIRECT_EXEMPT': [r'^healthz/?$'],
             'SESSION_COOKIE_SECURE': True,
             'CSRF_COOKIE_SECURE': True,
             'SECURE_HSTS_SECONDS': hsts_seconds,
