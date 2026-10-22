@@ -1,25 +1,39 @@
 name: Deploy
 
-# Runs the workflow file from the default branch after CI finishes.
-# A failing or non-main CI run does not deploy. Missing secrets skip the
-# SSH step and leave this workflow green so main is not blocked before
-# the server credentials exist.
+# Production deploy: only after CI succeeds on main, or manually dispatched.
+# Missing secrets skip the SSH step and stay green so main is never blocked
+# before server credentials exist. A failed post-deploy health check fails
+# the run (and deploy.sh rolls the server back to the previous commit).
 on:
   workflow_run:
     workflows: ["CI"]
     types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
 jobs:
   deploy:
     if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_branch == 'main'
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main')
+    name: Deploy to production
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: http://197.248.201.233:9000/healthz/
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Check deploy secrets
         id: gate
@@ -32,19 +46,16 @@ jobs:
           missing=0
           for name in SSH_HOST SSH_USER SSH_PRIVATE_KEY DEPLOY_PATH; do
             eval "value=\${$name}"
-            if [ -z "$value" ]; then
-              echo "Secret $name is not configured."
-              missing=1
-            fi
+            if [ -z "$value" ]; then echo "Secret $name is not configured."; missing=1; fi
           done
           if [ "$missing" -eq 1 ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "Deploy secrets are incomplete; skipping deploy."
+            echo "::warning::Deploy secrets incomplete — skipping deploy."
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Deploy over SSH
+      - name: Deploy over SSH (migrate → restart → health → rollback on failure)
         if: steps.gate.outputs.skip != 'true'
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -53,15 +64,26 @@ jobs:
           SSH_PORT: ${{ secrets.SSH_PORT }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" | sed 's/\\n/\n/g' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           PORT="${SSH_PORT:-22}"
           quoted_path=$(printf '%q' "$DEPLOY_PATH")
-          ssh -i ~/.ssh/deploy_key \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=accept-new \
-            -p "$PORT" \
-            "$SSH_USER@$SSH_HOST" \
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new \
+            -p "$PORT" "$SSH_USER@$SSH_HOST" \
             "DEPLOY_PATH=$quoted_path bash -s" < deploy/deploy.sh
+
+      - name: Post-deploy health check
+        if: steps.gate.outputs.skip != 'true'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          HEALTHCHECK_URL: ${{ vars.HEALTHCHECK_URL }}
+        run: |
+          URL="${HEALTHCHECK_URL:-http://${SSH_HOST}:9000/healthz/}"
+          echo "Probing $URL"
+          for i in $(seq 1 12); do
+            if curl -fsS --max-time 10 "$URL"; then echo; echo "Healthy after attempt $i"; exit 0; fi
+            echo "Not healthy yet (attempt $i/12), retrying in 10s…"; sleep 10
+          done
+          echo "::error::Production health check failed: $URL"
+          exit 1

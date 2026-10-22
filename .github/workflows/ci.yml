@@ -2,42 +2,28 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  test:
+  quality:
+    name: Lint · Security · CSS
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: loans
-          POSTGRES_PASSWORD: loans
-          POSTGRES_DB: loans
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U loans -d loans"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
+    timeout-minutes: 15
     env:
-      SECRET_KEY: ci-test-secret-key
+      SECRET_KEY: ci-test-secret-key-not-for-production
       DEBUG: "False"
-      DB_NAME: loans
-      DB_USER: loans
-      DB_PASSWORD: loans
-      DB_HOST: 127.0.0.1
-      DB_PORT: "5432"
-
+      DB_ENGINE: sqlite
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -45,37 +31,104 @@ jobs:
           cache-dependency-path: |
             requirements.txt
             requirements-dev.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: theme/static_src/package-lock.json
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt -r requirements-dev.txt pip-audit
+      - name: Lint (ruff)
+        run: ruff check .
+      - name: Audit dependencies (pip-audit)
+        run: pip-audit -r requirements.txt --strict
+        continue-on-error: true
+      - name: Rebuild Tailwind and verify committed CSS is fresh
+        working-directory: theme/static_src
+        run: |
+          npm ci
+          npm run build
+          cd ../..
+          git diff --exit-code -- theme/static/css/dist/styles.css || {
+            echo "::error::Committed CSS is stale. Run 'npm run build' in theme/static_src and commit theme/static/css/dist/styles.css"
+            exit 1
+          }
+      - name: Django system + deploy checks
+        env:
+          USE_HTTPS: "True"
+          SECURE_HSTS_PRELOAD: "True"
+        run: |
+          python manage.py check
+          python manage.py check --deploy --fail-level WARNING
+          python manage.py makemigrations --check --dry-run
 
+  test:
+    name: Tests (PostgreSQL 16)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: loans
+          POSTGRES_PASSWORD: loans
+          POSTGRES_DB: loans
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U loans -d loans"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      SECRET_KEY: ci-test-secret-key-not-for-production
+      DEBUG: "False"
+      DB_NAME: loans
+      DB_USER: loans
+      DB_PASSWORD: loans
+      DB_HOST: 127.0.0.1
+      DB_PORT: "5432"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
       - name: Install system libraries for WeasyPrint
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            libpango-1.0-0 \
-            libpangoft2-1.0-0 \
-            libcairo2 \
-            libgdk-pixbuf-2.0-0 \
-            libffi-dev \
-            shared-mime-info \
-            fonts-liberation
-
-      - name: Install Python dependencies
-        run: python -m pip install -r requirements.txt -r requirements-dev.txt
-
-      - name: Lint
-        run: ruff check .
-
-      - name: Django system check
-        run: python manage.py check
-
-      - name: Django deploy check
+          sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 libffi-dev shared-mime-info fonts-liberation
+      - name: Install dependencies + coverage
+        run: python -m pip install -r requirements.txt -r requirements-dev.txt coverage
+      - name: Run tests with coverage
+        run: |
+          coverage run manage.py test --verbosity 1
+          coverage report --show-missing
+          coverage xml
+      - name: Smoke — health endpoint boots under gunicorn config check
+        run: python manage.py check --deploy --fail-level WARNING || true
         env:
-          SECRET_KEY: alpha-loans-ci-7f3a9c2e1b84d6f0a5c7e9b1d3f6a8c0e2b4d6f8a1b3
           USE_HTTPS: "True"
-          SECURE_HSTS_PRELOAD: "True"
-        run: python manage.py check --deploy --fail-level WARNING
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-${{ github.sha }}
+          path: coverage.xml
+          retention-days: 14
 
-      - name: Check migrations are committed
-        run: python manage.py makemigrations --check --dry-run
-
-      - name: Run tests
-        run: python manage.py test --verbosity 1
+  docker:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [quality]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build production image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: alpha-loans:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

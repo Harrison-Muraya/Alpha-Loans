@@ -3,10 +3,23 @@
 {% block title %}Dashboard — Alpha Loans{% endblock %}
 {% block heading %}Dashboard{% endblock %}
 {% block content %}
+<section class="hero">
+    <p class="stat-label" style="color:#e0c27a;">{% now "l, d F Y" %} · Africa/Nairobi</p>
+    <h2>{% if user.is_staff %}Good day, {{ user.get_full_name|default:user.username }}{% else %}Welcome back, {{ user.get_full_name|default:user.username }}{% endif %}</h2>
+    <p>{% if user.is_staff %}The book at a glance — KES {{ collected|floatformat:0 }} collected of KES {{ total_expected|floatformat:0 }} expected{% if total_expected %} ({% widthratio collected total_expected 100 %}%){% endif %}.{% else %}Your loans and what is still due — KES {{ outstanding|floatformat:0 }} outstanding.{% endif %}</p>
+    {% if total_expected %}<div class="progress progress-lg" role="progressbar" aria-valuenow="{% widthratio collected total_expected 100 %}" aria-valuemin="0" aria-valuemax="100" aria-label="Collection progress"><span style="width:{% widthratio collected total_expected 100 %}%"></span></div>{% endif %}
+    <div class="hero-actions">
+        {% if user.is_staff %}
+        <a class="btn btn-primary" href="{% url 'manage_loans' %}">Issue / manage loans</a>
+        <a class="btn btn-secondary" href="{% url 'borrower_summary' %}">Borrowers</a>
+        {% endif %}
+        <a class="btn btn-secondary" href="{% url 'loan_list' %}">{% if user.is_staff %}All loans{% else %}My loans{% endif %}</a>
+    </div>
+</section>
 <div class="page-head">
     <div>
         <h2>Overview</h2>
-        <p class="lede">{% if user.is_staff %}The book, at a glance.{% else %}Your loans and what is still due.{% endif %}</p>
+        <p class="lede">{% if user.is_staff %}Key figures for the whole book.{% else %}Your position at a glance.{% endif %}</p>
     </div>
 </div>
 <div class="stat-grid">

@@ -141,11 +141,34 @@ sudo journalctl -u Alpha-Loans -n 50
 
 `deploy/deploy.sh` is that sequence, plus a Tailwind build when `npm` is installed. It collects static files before migrating, and retries `migrate` up to five times (3s, 6s, 12s, 24s) when the database drops the connection. The service restarts only after migrate succeeds.
 
-## GitHub Actions
+## Production with Docker (alternative to bare-metal)
 
-`.github/workflows/ci.yml` runs on every push and pull request: PostgreSQL 16, dependencies, `ruff`, `manage.py check`, `manage.py check --deploy --fail-level WARNING` (with `USE_HTTPS=true` and HSTS preload, which is stricter than the live HTTP site), `makemigrations --check`, and the test suite.
+```bash
+cp .env.example .env   # set a 50+ char SECRET_KEY, DB_PASSWORD, ALLOWED_HOSTS, USE_HTTPS
+docker compose -f docker-compose.prod.yml up -d --build
+curl http://127.0.0.1:9000/healthz/   # {"status":"ok","database":"ok"}
+```
 
-`.github/workflows/deploy.yml` starts only after that CI workflow succeeds on `main`. It SSHes to the server and runs `deploy/deploy.sh`. If any required secret is missing, the deploy job logs that and **succeeds without deploying**.
+`docker-compose.prod.yml` runs PostgreSQL 16, Gunicorn (`deploy/gunicorn.conf.py`, non-root, `Dockerfile` healthcheck) and Nginx (`deploy/nginx.conf`, serves `/static/`, proxies `/healthz/`). `deploy/entrypoint.sh` collects static, retries `migrate` with backoff, then execs Gunicorn. Data lives in the `pgdata` volume; back it up with `pg_dump` before upgrades.
+
+## Health check
+
+`GET /healthz/` is unauthenticated, returns `200 {"status":"ok","database":"ok"}` only when the DB answers `SELECT 1`, otherwise `503`. Used by Docker, `deploy/deploy.sh` and the post-deploy smoke test in GitHub Actions.
+
+## GitHub Actions (CI/CD)
+
+```
+push / PR ──► CI ──► quality: ruff · pip-audit · Tailwind build (committed CSS must be fresh) · check --deploy
+                  ├─► test: PostgreSQL 16 · coverage (artifact uploaded)
+                  └─► docker: production image builds (Buildx + GHA cache)
+push to main ─► CI green ─► Deploy (environment: production, never cancelled mid-run)
+                            SSH → deploy.sh: git pull → pip → Tailwind → collectstatic
+                            → migrate (retry) → restart → /healthz/ gate
+                            → on any failure: rollback to previous commit + restart
+                            → external /healthz/ probe (12 × 10s) fails the run if down
+```
+
+`.github/workflows/ci.yml` runs on every push and pull request. `.github/workflows/deploy.yml` starts only after CI succeeds on `main` (or via manual *workflow_dispatch*). If any required secret is missing, the deploy job logs that and **succeeds without deploying**. Weekly Dependabot PRs cover pip, npm, Docker and Actions.
 
 ### Secrets
 

@@ -1,0 +1,42 @@
+# Production stack:  Internet → nginx (:9000) → gunicorn (web:8000) → postgres
+# Usage:  cp .env.example .env  (set SECRET_KEY, DB_PASSWORD, ALLOWED_HOSTS)
+#         docker compose -f docker-compose.prod.yml up -d --build
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-loans}
+      POSTGRES_USER: ${DB_USER:-loans}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-loans} -d ${DB_NAME:-loans}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: [.env]
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      GUNICORN_BIND: 0.0.0.0:8000
+    depends_on:
+      db: { condition: service_healthy }
+    volumes: [staticfiles:/app/staticfiles]
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports: ["${HTTP_PORT:-9000}:80"]
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - staticfiles:/srv/static:ro
+    depends_on: [web]
+
+volumes:
+  pgdata:
+  staticfiles:
