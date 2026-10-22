@@ -20,11 +20,11 @@ module.exports = {
          */
         '../../templates/**/*.html',
 
-        /*
-         * Templates in other django apps (BASE_DIR/<any_app_name>/templates).
-         * Adjust the following line to match your project structure.
-         */
-        '../../**/templates/**/*.html',
+        // NOTE: deliberately no broad "any app templates" glob here. That
+        // glob also scanned venv and node_modules on a dev machine, so the
+        // built CSS differed between Windows laptops and Linux CI
+        // ("Committed CSS is stale"). All project templates live under
+        // BASE_DIR/templates (covered above) and theme/templates.
 
         /**
          * JS: If you use Tailwind CSS in JavaScript, uncomment the following lines and make sure
