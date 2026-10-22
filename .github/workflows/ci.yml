@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      SECRET_KEY: ci-test-secret-key-not-for-production
+      SECRET_KEY: alpha-loans-ci-7f3a9c2e1b84d6f0a5c7e9b1d3f6a8c0e2b4d6f8a1b3
       DEBUG: "False"
       DB_ENGINE: sqlite
     steps:
@@ -78,7 +78,7 @@ jobs:
           --health-cmd "pg_isready -U loans -d loans"
           --health-interval 10s --health-timeout 5s --health-retries 5
     env:
-      SECRET_KEY: ci-test-secret-key-not-for-production
+      SECRET_KEY: alpha-loans-ci-7f3a9c2e1b84d6f0a5c7e9b1d3f6a8c0e2b4d6f8a1b3
       DEBUG: "False"
       DB_NAME: loans
       DB_USER: loans
