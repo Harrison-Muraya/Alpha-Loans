@@ -12,6 +12,12 @@ urlpatterns = [
     path('manage/', views.manage_loans, name='manage_loans'),
     path('manage/borrower_summary/', views.borrower_summary, name='borrower_summary'),
     path('manage/borrower_summary/<int:user_id>/', views.borrower_detail, name='borrower_detail'),
+    path('manage/payments/', views.record_borrower_payment, name='record_borrower_payment'),
+    path(
+        'manage/borrowers/<int:user_id>/pay/',
+        views.record_borrower_payment,
+        name='record_borrower_payment_for',
+    ),
     path('update/<int:loan_id>/', views.update_loan, name='update_loan'),
     path('delete/<int:loan_id>/', views.delete_loan, name='delete_loan'),
     path('payment/<int:loan_id>/', views.record_payment, name='record_payment'),

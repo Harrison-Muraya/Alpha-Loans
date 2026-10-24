@@ -1,9 +1,11 @@
 import threading
+from datetime import timedelta
 from decimal import Decimal
 
 from django.db import connections
 from django.test import Client, TestCase, TransactionTestCase, skipUnlessDBFeature
 from django.urls import reverse
+from django.utils import timezone
 
 from loans.models import Loan, Payment
 from loans.tests.helpers import make_loan, make_payment, make_user
@@ -99,6 +101,58 @@ class RecordPaymentTests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 405)
         self.assertEqual(Payment.objects.count(), 0)
+
+
+class BorrowerPaymentAllocationTests(TestCase):
+    def setUp(self):
+        self.staff = make_user('alloc-staff', staff=True)
+        self.borrower = make_user('alloc-borrower')
+        self.client.force_login(self.staff)
+
+    def test_payment_splits_across_open_loans_overdue_first(self):
+        older = make_loan(
+            self.borrower,
+            amount='1000',
+            interest='0',
+            penalty='0',
+            due=timezone.localdate() - timedelta(days=10),
+            status='overdue',
+        )
+        newer = make_loan(
+            self.borrower,
+            amount='500',
+            interest='0',
+            penalty='0',
+            due=timezone.localdate() + timedelta(days=20),
+        )
+        response = self.client.post(
+            reverse('record_borrower_payment_for', args=[self.borrower.id]),
+            {'borrower': self.borrower.id, 'amount': '1200', 'method': 'mpesa'},
+        )
+        self.assertEqual(response.status_code, 302)
+        older.refresh_from_db()
+        newer.refresh_from_db()
+        self.assertTrue(older.is_paid)
+        self.assertEqual(older.total_paid(), Decimal('1000'))
+        self.assertFalse(newer.is_paid)
+        self.assertEqual(newer.total_paid(), Decimal('200'))
+        self.assertEqual(Payment.objects.filter(loan__borrower=self.borrower).count(), 2)
+
+    def test_overpayment_against_borrower_is_rejected(self):
+        make_loan(self.borrower, amount='100', interest='0', penalty='0')
+        response = self.client.post(
+            reverse('record_borrower_payment_for', args=[self.borrower.id]),
+            {'borrower': self.borrower.id, 'amount': '500', 'method': 'cash'},
+            follow=True,
+        )
+        self.assertContains(response, 'remaining balance')
+        self.assertEqual(Payment.objects.count(), 0)
+
+    def test_record_payment_page_lists_borrowers(self):
+        make_loan(self.borrower, amount='100', interest='0', penalty='0')
+        response = self.client.get(reverse('record_borrower_payment'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.borrower.username)
 
 
 class ConcurrentPaymentTests(TransactionTestCase):

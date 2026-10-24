@@ -49,6 +49,12 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1"/><circle cx="9.5" cy="7.5" r="3"/><path d="M20 8v6M17 11h6"/></svg>
                     Borrowers
                 </a>
+                {% if can_write_loans %}
+                <a class="nav-link {% if request.resolver_match.url_name == 'record_borrower_payment' or request.resolver_match.url_name == 'record_borrower_payment_for' %}is-active{% endif %}" href="{% url 'record_borrower_payment' %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v18M5 10h14"/><path d="M7 21h10a2 2 0 0 0 2-2V9L12 3 5 9v10a2 2 0 0 0 2 2z" opacity=".35"/></svg>
+                    Record payment
+                </a>
+                {% endif %}
                 {% endif %}
                 {% if can_manage_users %}
                 <p class="nav-label">Administration</p>

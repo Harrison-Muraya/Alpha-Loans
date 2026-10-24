@@ -5,8 +5,13 @@
 <div class="page-head">
     <div>
         <h2>Borrowers</h2>
-        <p class="lede">People with at least one live loan. Open a row for the statement and payments.</p>
+        <p class="lede">People with at least one live loan. Record a payment against a borrower — it applies across their open loans.</p>
     </div>
+    {% if can_write_loans %}
+    <div class="page-actions">
+        <a class="btn btn-primary" href="{% url 'record_borrower_payment' %}">Record payment</a>
+    </div>
+    {% endif %}
 </div>
 <form class="filters" method="get" style="margin-bottom:1rem;">
     <div class="field">
@@ -26,6 +31,7 @@
                     <th scope="col">Principal</th>
                     <th scope="col">Total due</th>
                     <th scope="col">Status</th>
+                    {% if can_write_loans %}<th scope="col">Actions</th>{% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -54,9 +60,16 @@
                         <span class="badge badge-muted">No open loan</span>
                         {% endif %}
                     </td>
+                    {% if can_write_loans %}
+                    <td>
+                        {% if not user.is_paid %}
+                        <a class="btn btn-primary btn-small" href="{% url 'record_borrower_payment_for' user.id %}">Pay</a>
+                        {% endif %}
+                    </td>
+                    {% endif %}
                 </tr>
                 {% empty %}
-                <tr><td colspan="5"><div class="empty"><h3>No borrowers found</h3></div></td></tr>
+                <tr><td colspan="{% if can_write_loans %}6{% else %}5{% endif %}"><div class="empty"><h3>No borrowers found</h3></div></td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -9,12 +9,12 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Count, Prefetch, Q, Sum
+from django.db.models import Case, Count, IntegerField, Prefetch, Q, Sum, When
 from django.db.models.functions import TruncMonth
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
 from .db import lock_rows
 from .forms import LoanForm, LoanUpdateForm, UserRegistrationForm
@@ -59,6 +59,101 @@ def parse_payment_amount(raw):
 
 def _payment_methods():
     return {choice[0] for choice in Payment.PAYMENT_METHOD_CHOICES}
+
+
+def _borrowers_with_open_loans():
+    return (
+        User.objects.filter(loans__is_paid=False)
+        .distinct()
+        .order_by('first_name', 'last_name', 'username')
+    )
+
+
+def _open_loans_for_borrower(borrower):
+    """Unpaid loans, overdue first, then soonest due date."""
+    return (
+        Loan.objects.filter(borrower=borrower, is_paid=False)
+        .select_related('borrower')
+        .annotate(
+            _priority=Case(
+                When(status='overdue', then=0),
+                default=1,
+                output_field=IntegerField(),
+            )
+        )
+        .order_by('_priority', 'due_date', 'id')
+        .with_totals()
+    )
+
+
+def _apply_payment_to_loan(loan, amount, *, method, reference, note, recorded_by):
+    """Create one payment row and mark the loan paid when the balance hits zero."""
+    Payment.objects.create(
+        loan=loan,
+        amount=amount,
+        method=method,
+        reference=reference,
+        note=note,
+        recorded_by=recorded_by,
+        paid_at=timezone.now(),
+    )
+    return loan.check_and_mark_paid()
+
+
+def allocate_borrower_payment(borrower, amount, *, method, reference, note, recorded_by):
+    """Spread a payment across the borrower's open loans (overdue → oldest due).
+
+    Returns (created_payments, loans_marked_paid). Raises ValueError if the
+    amount is larger than the borrower's total outstanding balance.
+    """
+    with transaction.atomic():
+        loans = list(
+            lock_rows(
+                Loan.objects.filter(borrower=borrower, is_paid=False)
+                .select_related('borrower')
+                .annotate(
+                    _priority=Case(
+                        When(status='overdue', then=0),
+                        default=1,
+                        output_field=IntegerField(),
+                    )
+                )
+                .order_by('_priority', 'due_date', 'id')
+            )
+        )
+        if not loans:
+            raise ValueError('This borrower has no open loans.')
+
+        balances = [(loan, loan.balance_remaining()) for loan in loans]
+        total_balance = sum((bal for _, bal in balances), Decimal('0.00'))
+        if amount > total_balance:
+            raise ValueError(
+                f'Amount exceeds the remaining balance (KES {total_balance}).'
+            )
+
+        created = []
+        paid_count = 0
+        remaining = amount
+        for loan, balance in balances:
+            if remaining <= 0:
+                break
+            if balance <= 0:
+                continue
+            apply = min(remaining, balance)
+            was_paid = _apply_payment_to_loan(
+                loan,
+                apply,
+                method=method,
+                reference=reference,
+                note=note,
+                recorded_by=recorded_by,
+            )
+            created.append((loan, apply))
+            if was_paid:
+                paid_count += 1
+            remaining -= apply
+
+        return created, paid_count
 
 
 def _borrower_rows(users):
@@ -403,8 +498,99 @@ def borrower_detail(request, user_id):
 
 @login_required
 @user_passes_test(is_staff)
+@require_http_methods(['GET', 'POST'])
+def record_borrower_payment(request, user_id=None):
+    """Record a payment against a borrower; amount is split across open loans."""
+    denied = reject_read_only(request, 'borrower_summary')
+    if denied:
+        return denied
+
+    borrowers = _borrowers_with_open_loans()
+    selected = None
+    if user_id is not None:
+        selected = get_object_or_404(User, id=user_id)
+    elif request.method == 'GET':
+        raw = request.GET.get('borrower', '').strip()
+        if raw.isdigit():
+            selected = User.objects.filter(id=int(raw)).first()
+
+    open_loans = list(_open_loans_for_borrower(selected)) if selected else []
+    total_balance = sum((loan.balance_remaining() for loan in open_loans), Decimal('0.00'))
+
+    if request.method == 'POST':
+        method = (request.POST.get('method') or 'cash').strip()
+        reference = request.POST.get('reference', '').strip()
+        note = request.POST.get('note', '').strip()
+        raw_borrower = request.POST.get('borrower') or user_id
+        try:
+            borrower = get_object_or_404(User, id=int(raw_borrower))
+        except (TypeError, ValueError):
+            messages.error(request, 'Choose a borrower.')
+            return redirect('record_borrower_payment')
+
+        if method not in _payment_methods():
+            messages.error(request, 'Choose a valid payment method.')
+            return redirect('record_borrower_payment_for', user_id=borrower.id)
+
+        try:
+            amount = parse_payment_amount(request.POST.get('amount'))
+        except (InvalidOperation, ValueError, TypeError):
+            messages.error(request, 'Enter a valid payment amount.')
+            return redirect('record_borrower_payment_for', user_id=borrower.id)
+
+        try:
+            created, paid_count = allocate_borrower_payment(
+                borrower,
+                amount,
+                method=method,
+                reference=reference,
+                note=note,
+                recorded_by=request.user,
+            )
+        except ValueError as exc:
+            messages.error(request, str(exc))
+            return redirect('record_borrower_payment_for', user_id=borrower.id)
+
+        loan_bits = ', '.join(
+            f'#{loan.id} KES {applied}' for loan, applied in created
+        )
+        log_activity(
+            request,
+            'payment_recorded',
+            detail=(
+                f'KES {amount} recorded for {borrower.username} via {method} '
+                f'across {len(created)} loan(s): {loan_bits}'
+            ),
+            loan_id=created[0][0].id if created else None,
+        )
+        msg = (
+            f'Payment of KES {amount} recorded for '
+            f'{borrower.get_full_name() or borrower.username} '
+            f'across {len(created)} loan(s).'
+        )
+        if paid_count:
+            msg += f' {paid_count} loan(s) fully paid.'
+        messages.success(request, msg)
+        return redirect('borrower_detail', user_id=borrower.id)
+
+    return render(
+        request,
+        'loans/record_payment.html',
+        {
+            'borrowers': borrowers,
+            'selected': selected,
+            'open_loans': open_loans,
+            'total_balance': total_balance,
+            'methods': Payment.PAYMENT_METHOD_CHOICES,
+        },
+    )
+
+
+@login_required
+@user_passes_test(is_staff)
 @require_POST
 def record_payment(request, loan_id):
+    """Legacy single-loan payment endpoint (kept for existing callers/tests)."""
     denied = reject_read_only(request, 'loan_list')
     if denied:
         return denied
@@ -435,16 +621,14 @@ def record_payment(request, loan_id):
             )
             return safe_redirect(request)
 
-        Payment.objects.create(
-            loan=loan,
-            amount=amount,
+        was_paid = _apply_payment_to_loan(
+            loan,
+            amount,
             method=method,
             reference=reference,
             note=note,
             recorded_by=request.user,
-            paid_at=timezone.now(),
         )
-        was_paid = loan.check_and_mark_paid()
         borrower_username = loan.borrower.username
         recorded_loan_id = loan.id
 

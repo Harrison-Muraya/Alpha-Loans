@@ -1,0 +1,98 @@
+{% extends 'loans/base.html' %}
+{% block title %}Record payment — Alpha Loans{% endblock %}
+{% block heading %}Record payment{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div>
+        <h2>Record payment</h2>
+        <p class="lede">Choose a borrower and enter one amount. It is applied to their open loans automatically — overdue first, then the soonest due date.</p>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-secondary" href="{% url 'borrower_summary' %}">All borrowers</a>
+    </div>
+</div>
+
+<section class="card card-pad">
+    <form method="post" action="{% if selected %}{% url 'record_borrower_payment_for' selected.id %}{% else %}{% url 'record_borrower_payment' %}{% endif %}">
+        {% csrf_token %}
+        <div class="form-grid">
+            <div class="field span-2">
+                <label for="borrower">Borrower</label>
+                <select class="input" id="borrower" name="borrower" required onchange="if (this.value) window.location='{% url 'record_borrower_payment' %}?borrower=' + this.value;">
+                    <option value="">Select a borrower with open loans…</option>
+                    {% for user in borrowers %}
+                    <option value="{{ user.id }}" {% if selected and selected.id == user.id %}selected{% endif %}>
+                        {{ user.get_full_name|default:user.username }} (@{{ user.username }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="amount">Amount (KES)</label>
+                <input class="input" id="amount" type="number" name="amount" step="0.01" min="0.01" required
+                       {% if total_balance %}max="{{ total_balance }}" placeholder="Up to {{ total_balance|floatformat:2 }}"{% endif %}>
+                {% if selected %}
+                <p class="hint">Outstanding across open loans: <strong class="num">KES {{ total_balance|floatformat:2 }}</strong></p>
+                {% endif %}
+            </div>
+            <div class="field">
+                <label for="method">Method</label>
+                <select class="input" id="method" name="method">
+                    {% for value, label in methods %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="reference">Reference</label>
+                <input class="input" id="reference" type="text" name="reference" placeholder="M-Pesa code / bank ref" autocomplete="off">
+            </div>
+            <div class="field">
+                <label for="note">Note</label>
+                <input class="input" id="note" type="text" name="note" placeholder="Optional">
+            </div>
+        </div>
+        <div class="page-actions" style="margin-top:1rem;">
+            <button type="submit" class="btn btn-primary" {% if not selected or not open_loans %}disabled{% endif %}>Record payment</button>
+            {% if selected and total_balance %}
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('amount').value='{{ total_balance }}'">Pay full balance</button>
+            {% endif %}
+        </div>
+    </form>
+</section>
+
+{% if selected %}
+<section class="card" style="margin-top:1rem;">
+    <div class="card-pad">
+        <h3 class="section-title">Open loans for {{ selected.get_full_name|default:selected.username }}</h3>
+        <p class="lede">Payment order: overdue loans first, then by due date.</p>
+    </div>
+    {% if open_loans %}
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th scope="col">Loan</th>
+                    <th scope="col">Due</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for loan in open_loans %}
+                <tr>
+                    <td>#{{ loan.id }} · KES {{ loan.amount|floatformat:2 }}</td>
+                    <td>{{ loan.due_date }}</td>
+                    <td>{% include 'loans/partials/loan_status.html' %}</td>
+                    <td class="num">KES {{ loan.balance_remaining|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty"><h3>No open loans</h3><p>This borrower has nothing outstanding.</p></div>
+    {% endif %}
+</section>
+{% endif %}
+{% endblock %}

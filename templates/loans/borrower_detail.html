@@ -9,6 +9,9 @@
         <p class="lede">@{{ borrower.username }}</p>
     </div>
     <div class="page-actions">
+        {% if can_write_loans and total_balance > 0 %}
+        <a class="btn btn-primary" href="{% url 'record_borrower_payment_for' borrower.id %}">Record payment</a>
+        {% endif %}
         <a class="btn btn-secondary" href="{% url 'export_borrower_pdf' borrower.id %}">Export PDF</a>
         {% if can_manage_users %}
         <a class="btn btn-secondary" href="{% url 'user_detail' borrower.id %}">Account</a>
@@ -55,9 +58,6 @@
             </div>
             <div class="page-actions">
                 {% include 'loans/partials/loan_status.html' %}
-                {% if can_write_loans and not loan.is_paid %}
-                <button type="button" class="btn btn-primary btn-small" onclick="togglePaymentForm({{ loan.id }})">Record payment</button>
-                {% endif %}
             </div>
         </div>
         <div class="stat-grid" style="padding:0 1rem 1rem;">
@@ -72,27 +72,6 @@
             <div class="progress" aria-hidden="true"><span style="width:{{ pct }}%;"></span></div>
         </div>
         {% endwith %}
-        {% if can_write_loans %}
-        <div id="payment-form-{{ loan.id }}" class="hidden" style="padding:0 1.2rem 1rem;">
-            <form method="post" action="{% url 'record_payment' loan.id %}">
-                {% csrf_token %}
-                <div class="filters">
-                    <div class="field"><label for="amount-{{ loan.id }}">Amount (KES)</label><input class="input" id="amount-{{ loan.id }}" type="number" name="amount" step="0.01" min="0.01" required></div>
-                    <div class="field"><label for="method-{{ loan.id }}">Method</label>
-                        <select class="input" id="method-{{ loan.id }}" name="method">
-                            <option value="cash">Cash</option>
-                            <option value="mpesa">M-Pesa</option>
-                            <option value="bank">Bank transfer</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                    <div class="field"><label for="reference-{{ loan.id }}">Reference</label><input class="input" id="reference-{{ loan.id }}" type="text" name="reference" placeholder="M-Pesa code"></div>
-                    <div class="field"><label for="note-{{ loan.id }}">Note</label><input class="input" id="note-{{ loan.id }}" type="text" name="note"></div>
-                    <button type="submit" class="btn btn-primary">Record</button>
-                </div>
-            </form>
-        </div>
-        {% endif %}
         {% if loan.payments.all %}
         <div class="table-wrap">
             <table class="data-table">
@@ -140,11 +119,6 @@
 {% endblock %}
 {% block scripts %}
 <script>
-function togglePaymentForm(id) {
-    var form = document.getElementById('payment-form-' + id);
-    if (!form) return;
-    form.classList.toggle('hidden');
-}
 function getChecked() { return Array.prototype.slice.call(document.querySelectorAll('.loan-checkbox:checked')); }
 function updateToolbar() {
     var checked = getChecked();
