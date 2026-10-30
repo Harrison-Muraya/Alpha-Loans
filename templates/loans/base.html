@@ -3,9 +3,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="description" content="Alpha Loans — staff loan book and borrower portal. Issue loans, record payments, track overdue accounts.">
     <meta name="theme-color" content="#10241c">
+    <meta name="mobile-web-app-capable" content="yes">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,620;1,9..144,500&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
@@ -126,11 +127,22 @@
         var root = document.documentElement;
         var shell = document.getElementById('shell');
         var opener = document.querySelector('[data-open-sidebar]');
+        var backdrop = document.querySelector('[data-close-sidebar]');
+        var mq = window.matchMedia('(max-width: 980px)');
+
         function applyTheme(dark) {
           root.classList.toggle('dark', dark);
           var toggle = document.getElementById('theme-toggle');
           if (toggle) toggle.setAttribute('aria-pressed', dark ? 'true' : 'false');
         }
+        function setSidebar(open) {
+          if (!shell || !opener) return;
+          shell.classList.toggle('sidebar-open', open);
+          opener.setAttribute('aria-expanded', open ? 'true' : 'false');
+          document.body.classList.toggle('nav-open', open && mq.matches);
+        }
+        function closeSidebar() { setSidebar(false); }
+
         var toggle = document.getElementById('theme-toggle');
         if (toggle) {
           applyTheme(root.classList.contains('dark'));
@@ -142,13 +154,17 @@
         }
         if (opener && shell) {
           opener.addEventListener('click', function () {
-            var open = shell.classList.toggle('sidebar-open');
-            opener.setAttribute('aria-expanded', open ? 'true' : 'false');
+            setSidebar(!shell.classList.contains('sidebar-open'));
           });
-          var backdrop = document.querySelector('[data-close-sidebar]');
-          if (backdrop) backdrop.addEventListener('click', function () {
-            shell.classList.remove('sidebar-open');
-            opener.setAttribute('aria-expanded', 'false');
+          if (backdrop) backdrop.addEventListener('click', closeSidebar);
+          shell.querySelectorAll('.sidebar a.nav-link, .sidebar a.brand').forEach(function (link) {
+            link.addEventListener('click', closeSidebar);
+          });
+          document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') closeSidebar();
+          });
+          mq.addEventListener('change', function () {
+            if (!mq.matches) closeSidebar();
           });
         }
         document.addEventListener('submit', function (event) {

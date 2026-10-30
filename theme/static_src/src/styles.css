@@ -58,16 +58,23 @@ html.dark {
 
 @layer base {
   html { scroll-behavior: smooth; }
+  *, *::before, *::after { box-sizing: border-box; }
   body {
     margin: 0;
     min-height: 100vh;
+    min-height: 100dvh;
     background:
       radial-gradient(1200px 500px at 100% -10%, rgba(154, 116, 51, 0.08), transparent 50%),
       var(--bg);
     color: var(--ink);
     font-family: var(--font);
     line-height: 1.5;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
+  body.nav-open { overflow: hidden; touch-action: none; }
+  img, svg, video, canvas { max-width: 100%; height: auto; }
   h1, h2, h3, .display { font-family: var(--display); font-weight: 560; letter-spacing: -0.03em; }
   a { color: var(--accent); }
   :focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
@@ -219,8 +226,13 @@ html.dark {
   .split { display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 1rem; align-items: start; }
   .split-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
-  .table-wrap { overflow-x: auto; }
-  .data-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    max-width: 100%;
+  }
+  .data-table { width: 100%; min-width: 36rem; border-collapse: collapse; font-size: 0.92rem; }
   .data-table th {
     text-align: left;
     font-size: 0.72rem;
@@ -437,21 +449,106 @@ html.dark {
 
 @media (max-width: 980px) {
   .stat-grid, .chart-grid, .split, .split-2 { grid-template-columns: 1fr 1fr; }
-  .menu-btn { display: inline-flex; }
+  .menu-btn { display: inline-flex; flex: none; }
   .sidebar {
     position: fixed;
+    left: 0;
+    top: 0;
     z-index: 40;
+    width: min(17.5rem, calc(100vw - 3rem));
+    max-width: 100%;
     transform: translateX(-105%);
-    transition: transform 0.2s ease;
+    transition: transform 0.22s ease;
     height: 100vh;
+    height: 100dvh;
+    padding-top: max(1.25rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    padding-left: max(0.9rem, env(safe-area-inset-left));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: 12px 0 40px rgba(0, 0, 0, 0.28);
   }
   .shell.sidebar-open .sidebar { transform: none; }
-  .shell.sidebar-open .sidebar-backdrop { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 30; }
-  .content, .toasts { padding-left: 1rem; padding-right: 1rem; }
+  .shell.sidebar-open .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 30;
+    backdrop-filter: blur(2px);
+  }
+  .topbar {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-left: max(0.85rem, env(safe-area-inset-left));
+    padding-right: max(0.85rem, env(safe-area-inset-right));
+    gap: 0.55rem;
+  }
+  .topbar h1 {
+    font-size: 1.15rem;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .content {
+    padding: 0.4rem max(0.85rem, env(safe-area-inset-right)) max(2rem, env(safe-area-inset-bottom)) max(0.85rem, env(safe-area-inset-left));
+    max-width: none;
+  }
+  .toasts { padding-left: max(0.85rem, env(safe-area-inset-left)); padding-right: max(0.85rem, env(safe-area-inset-right)); }
+  .page-head { align-items: flex-start; }
+  .page-head h2 { font-size: 1.45rem; }
+  .page-actions { width: 100%; }
+  .page-actions .btn { flex: 1 1 auto; min-height: 2.65rem; }
+  .hero { padding: 1.15rem 1.1rem; border-radius: 18px; }
+  .hero h2 { font-size: 1.45rem; }
+  .hero-actions { width: 100%; }
+  .hero-actions .btn { flex: 1 1 calc(50% - 0.35rem); min-height: 2.65rem; justify-content: center; }
+  .filters { flex-direction: column; align-items: stretch; }
+  .filters .field { width: 100%; }
+  .filters .input, .filters select.input { width: 100%; min-width: 0; }
+  .filters .btn { width: 100%; min-height: 2.65rem; }
+  .auth-screen {
+    padding: 1.25rem max(1rem, env(safe-area-inset-right)) max(1.5rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+    align-items: center;
+  }
+  .auth-stack { width: 100%; }
+  .auth-card { padding: 1.35rem 1.15rem 1.2rem; }
+  .auth-card h1 { font-size: 1.75rem; }
+  .modal-backdrop { padding: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left)); align-items: flex-end; }
+  .modal { width: 100%; max-height: min(90dvh, 100%); overflow-y: auto; border-radius: 18px 18px 12px 12px; }
+  .stat-value { font-size: 1.4rem; word-break: break-word; }
+  .icon-btn, .menu-btn { width: 2.75rem; height: 2.75rem; }
+  .btn { min-height: 2.65rem; }
 }
 
 @media (max-width: 680px) {
   .stat-grid, .chart-grid, .split, .split-2, .form-grid { grid-template-columns: 1fr; }
   .form-grid .span-2 { grid-column: auto; }
-  .topbar h1 { font-size: 1.15rem; }
+  .stat-grid { gap: 0.7rem; }
+  .page-head { flex-direction: column; gap: 0.75rem; margin-bottom: 0.9rem; }
+  .page-actions { flex-direction: column; align-items: stretch; }
+  .page-actions .btn { width: 100%; flex: none; }
+  .hero-actions { flex-direction: column; }
+  .hero-actions .btn { width: 100%; flex: none; }
+  .card-pad { padding: 1rem; }
+  .data-table { font-size: 0.85rem; min-width: 30rem; }
+  .data-table th, .data-table td { padding: 0.7rem 0.7rem; }
+  .person { min-width: 0; }
+  .person > div { min-width: 0; }
+  .person a { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .row-actions { flex-wrap: wrap; gap: 0.35rem; }
+  .pager { justify-content: center; flex-wrap: wrap; gap: 0.5rem; padding: 0.75rem; }
+  .content { padding-bottom: max(2.5rem, env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 420px) {
+  .stat-value { font-size: 1.25rem; }
+  .hero h2 { font-size: 1.28rem; }
+  .auth-feats { flex-direction: column; align-items: flex-start; }
+  .brand img { max-width: 170px; }
+}
+
+@media (hover: none) {
+  .stat:hover { transform: none; box-shadow: var(--shadow); }
+  .btn:active { transform: scale(0.98); }
 }
