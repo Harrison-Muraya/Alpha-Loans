@@ -9,7 +9,7 @@ Internet
    ↓
 Nginx
    ↓
-/run/alpha-loans.sock
+/run/alpha-loans/alpha-loans.sock
    ↓
 Gunicorn
    ↓
