@@ -5,7 +5,8 @@ Install:
     pip install weasyprint openpyxl
 
 WeasyPrint on Ubuntu/Debian also needs system libs:
-    sudo apt install libpango-1.0-0 libpangoft2-1.0-0 libcairo2
+    sudo apt install libpango-1.0-0 libpangoft2-1.0-0 libcairo2 \
+        libgdk-pixbuf-2.0-0 shared-mime-info fonts-liberation
 
 WeasyPrint on Windows:
     Follow https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows
@@ -19,6 +20,22 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 
+class PdfExportError(Exception):
+    """Raised when the PDF engine cannot produce a statement."""
+
+
+def _offline_url_fetcher(url, timeout=10, ssl_context=None):
+    """Block remote HTTP(S) fetches so PDF generation never hangs on fonts/CDN."""
+    if url.startswith(('http://', 'https://', '//')):
+        raise PdfExportError(
+            f'PDF templates must not load remote URLs (blocked: {url}). '
+            'Use system fonts only.'
+        )
+    from weasyprint import default_url_fetcher
+
+    return default_url_fetcher(url, timeout=timeout, ssl_context=ssl_context)
+
+
 # ── PDF via WeasyPrint ────────────────────────────────────────────────────────
 
 def generate_borrower_statement(borrower, loans) -> bytes:
@@ -29,9 +46,15 @@ def generate_borrower_statement(borrower, loans) -> bytes:
     Imported here so a machine without the WeasyPrint system libraries can
     still boot the rest of the app.
     """
-    from weasyprint import HTML
+    try:
+        from weasyprint import HTML
+    except Exception as exc:  # noqa: BLE001 - missing native libs surface as OSError
+        raise PdfExportError(
+            'PDF engine is not available on this server. '
+            'Install WeasyPrint system libraries '
+            '(libpango, libcairo, fonts-liberation).'
+        ) from exc
 
-    # Build context
     loans_list = list(loans)
     total_loaned = sum(loan.amount for loan in loans_list)
     total_due = sum(loan.total_amount_due() for loan in loans_list)
@@ -39,17 +62,28 @@ def generate_borrower_statement(borrower, loans) -> bytes:
     total_balance = sum(loan.balance_remaining() for loan in loans_list)
 
     context = {
-        'borrower':      borrower,
-        'loans':         loans_list,
-        'total_loaned':  total_loaned,
-        'total_due':     total_due,
-        'total_paid':    total_paid_amt,
+        'borrower': borrower,
+        'loans': loans_list,
+        'total_loaned': total_loaned,
+        'total_due': total_due,
+        'total_paid': total_paid_amt,
         'total_balance': total_balance,
-        'generated_at':  timezone.now(),
+        'generated_at': timezone.now(),
     }
 
     html_string = render_to_string('loans/pdf_statement.html', context)
-    pdf_bytes   = HTML(string=html_string).write_pdf()
+    try:
+        pdf_bytes = HTML(
+            string=html_string,
+            url_fetcher=_offline_url_fetcher,
+        ).write_pdf()
+    except PdfExportError:
+        raise
+    except Exception as exc:  # noqa: BLE001 - WeasyPrint/native errors vary by host
+        raise PdfExportError(
+            'Could not generate the PDF statement. '
+            'Check server logs and WeasyPrint system dependencies.'
+        ) from exc
     return pdf_bytes
 
 
@@ -62,16 +96,16 @@ def generate_loans_excel(loans) -> bytes:
     """
     wb = openpyxl.Workbook()
 
-    BLUE_FILL  = PatternFill('solid', fgColor='2D5BE3')
-    ALT_FILL   = PatternFill('solid', fgColor='F0EDE8')
-    HDR_FONT   = Font(color='FFFFFF', bold=True, size=10)
-    CENTER     = Alignment(horizontal='center')
+    BLUE_FILL = PatternFill('solid', fgColor='2D5BE3')
+    ALT_FILL = PatternFill('solid', fgColor='F0EDE8')
+    HDR_FONT = Font(color='FFFFFF', bold=True, size=10)
+    CENTER = Alignment(horizontal='center')
 
     def style_header_row(ws, headers):
         for col, h in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=h)
-            cell.font      = HDR_FONT
-            cell.fill      = BLUE_FILL
+            cell.font = HDR_FONT
+            cell.fill = BLUE_FILL
             cell.alignment = CENTER
         ws.freeze_panes = 'A2'
 
@@ -92,7 +126,7 @@ def generate_loans_excel(loans) -> bytes:
 
     for r, loan in enumerate(loans, 2):
         fill = ALT_FILL if r % 2 == 0 else PatternFill()
-        row  = [
+        row = [
             loan.id,
             loan.borrower.get_full_name() or loan.borrower.username,
             loan.borrower.username,
@@ -125,7 +159,7 @@ def generate_loans_excel(loans) -> bytes:
     for loan in loans:
         for p in loan.payments.all():
             fill = ALT_FILL if r % 2 == 0 else PatternFill()
-            row  = [
+            row = [
                 loan.id,
                 loan.borrower.get_full_name() or loan.borrower.username,
                 float(p.amount),

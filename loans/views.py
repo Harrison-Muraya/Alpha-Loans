@@ -26,7 +26,7 @@ from .models import (
     loan_due_expression,
     sum_money,
 )
-from .pdf_export import generate_borrower_statement, generate_loans_excel
+from .pdf_export import PdfExportError, generate_borrower_statement, generate_loans_excel
 from .reports import filter_activity, filtered_deleted
 from .roles import can_write_loans, reject_read_only
 from .utils import get_client_ip, log_activity, safe_redirect
@@ -701,7 +701,11 @@ def export_borrower_pdf(request, user_id):
         .with_totals()
         .prefetch_related('payments')
     )
-    pdf = generate_borrower_statement(borrower, loans)
+    try:
+        pdf = generate_borrower_statement(borrower, loans)
+    except PdfExportError as exc:
+        messages.error(request, str(exc))
+        return redirect('borrower_detail', user_id=borrower.id)
     response = HttpResponse(pdf, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="statement_{borrower.username}.pdf"'
     return response

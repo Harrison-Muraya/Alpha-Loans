@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
-
+  /* System fonts only — WeasyPrint must not fetch Google Fonts (causes
+     hangs / 502 Bad Gateway on servers without outbound HTTPS). */
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   @page {
@@ -12,14 +12,14 @@
     margin: 18mm 16mm 18mm 16mm;
     @bottom-center {
       content: "Alpha Loans · Nairobi, Kenya · Page " counter(page) " of " counter(pages);
-      font-family: 'DM Sans', sans-serif;
+      font-family: "Liberation Sans", "DejaVu Sans", Arial, sans-serif;
       font-size: 9px;
       color: #a8a29e;
     }
   }
 
   body {
-    font-family: 'DM Sans', sans-serif;
+    font-family: "Liberation Sans", "DejaVu Sans", Arial, Helvetica, sans-serif;
     font-size: 10px;
     color: #1c1917;
     line-height: 1.5;
@@ -35,7 +35,7 @@
     border-bottom: 2px solid #2D5BE3;
   }
   .brand-name {
-    font-family: 'DM Serif Display', Georgia, serif;
+    font-family: Georgia, "Times New Roman", serif;
     font-size: 22px;
     color: #2D5BE3;
     letter-spacing: -0.5px;
@@ -73,7 +73,7 @@
     gap: 8mm;
   }
   .borrower-name {
-    font-family: 'DM Serif Display', Georgia, serif;
+    font-family: Georgia, "Times New Roman", serif;
     font-size: 16px;
     color: #1c1917;
     margin-bottom: 2px;
@@ -138,7 +138,7 @@
     color: #f0ede8;
   }
   .loan-id {
-    font-family: 'DM Serif Display', serif;
+    font-family: Georgia, "Times New Roman", serif;
     font-size: 12px;
     letter-spacing: -0.2px;
   }
@@ -255,10 +255,7 @@
     <div class="borrower-name">{{ borrower.get_full_name|default:borrower.username }}</div>
     <div class="borrower-meta">
       Username: @{{ borrower.username }}<br>
-      Email: {{ borrower.email|default:"—" }}<br>
-      {% with profile=borrower.profile %}
-      {% if profile %}Phone: {{ profile.phone_number|default:"—" }}{% endif %}
-      {% endwith %}
+      Email: {{ borrower.email|default:"—" }}
     </div>
   </div>
   <div class="borrower-meta" style="text-align:right;">
