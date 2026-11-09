@@ -186,7 +186,7 @@ push to main ─► CI green ─► Deploy (environment: production, never cance
 2. Clone this repo to `/var/www/Alpha-Loans` and create `venv` there (`python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt`).
 3. Create `.env` from `.env.example`. `USE_HTTPS` stays `false` while the site is plain HTTP on port 9000.
 4. `python manage.py migrate` and `python manage.py collectstatic --noinput`.
-5. Run Gunicorn on the unix socket `/run/alpha-loans.sock` under systemd unit `Alpha-Loans`. Nginx proxies port 9000 to that socket and should set `X-Forwarded-For`.
+5. Run Gunicorn on the unix socket `/run/alpha-loans/alpha-loans.sock` under systemd unit `Alpha-Loans`. Nginx proxies port 9000 to that socket and should set `X-Forwarded-For`.
 6. Allow the SSH user to restart the unit without a password prompt. `deploy.sh` runs `systemctl restart Alpha-Loans` and `systemctl status Alpha-Loans`. On Ubuntu the binary is usually `/usr/bin/systemctl` (`which systemctl` on the server). Example sudoers line: `username ALL=(root) NOPASSWD: /usr/bin/systemctl restart Alpha-Loans, /usr/bin/systemctl status Alpha-Loans`.
 7. Make sure `git pull` works non-interactively on the server (a deploy key or stored credential for this repo).
 8. Install the two cron lines above.
